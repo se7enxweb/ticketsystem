@@ -266,10 +266,12 @@ class ticketsystemMailer
                 expMailTemplateBody::setAlternative( $mail, $c['text'], $html );
             else
                 $mail->setBody( $c['text'] );
-            if ( eZMailTransport::send( $mail ) )
+            $ok = (bool)eZMailTransport::send( $mail );
+            if ( $ok )
                 $result['sent']++;
             else
                 $result['failed']++;
+            $this->logForAccount( $t, $mail, (int)$r['user_id'], $isOpening ? 'ticket.opened' : 'ticket.reply', $ok );
         }
         // 1.2: a copy to every CC address (doc/watchers.md): no reply reference, no rating link, never an identity
         $result['cc'] = 0;
@@ -401,6 +403,28 @@ class ticketsystemMailer
     public function captureText( $address, $subject, $text )
     {
         $this->capture( $address, array( 'subject' => $subject, 'text' => $text ), '', '<ticketsystem.notice.' . bin2hex( random_bytes( 6 ) ) . '@ticketsystem.invalid>', '' );
+    }
+
+    /**
+     * A mail to the customer side of a ticket goes into the account's e-mail history when Katalyst keeps one
+     * (expKatalystMailLog, its doc/my-portal.md "E-mail history"): the ticket's Katalyst account, else the recipient's.
+     * Mails to staff are not kept there. Never stops a mail.
+     */
+    protected function logForAccount( ticketsystemTicket $t, eZMail $mail, $userId, $kind, $ok )
+    {
+        if ( !class_exists( 'expKatalystMailLog' ) || (int)$userId <= 0 )
+            return;
+        try
+        {
+            if ( !$this->isCustomer( $t, (int)$userId ) )
+                return;
+            $customer = preg_match( '/^katalyst:(\d+)$/', (string)$t->attribute( 'account_key' ), $m ) ? (int)$m[1] : 0;
+            expKatalystMailLog::record( $mail, $kind, $customer, (int)$userId, 'ticketsystem', $ok );
+        }
+        catch ( Throwable $e )
+        {
+            eZDebug::writeWarning( 'ticketsystem mail history: ' . $e->getMessage(), __METHOD__ );
+        }
     }
 
     /** Whether a user belongs to the ticket's customer side (the opener or a user of its account), not support staff. */

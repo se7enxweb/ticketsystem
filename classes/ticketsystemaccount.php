@@ -60,7 +60,17 @@ class ticketsystemAccount
         if ( class_exists( 'eZSession' ) && class_exists( '\Exponential\View\Extension\SevenxKatalyst\Katalyst\CustomerView' ) )
             $chosen = \Exponential\View\Extension\SevenxKatalyst\Katalyst\CustomerView::chosenAccount();
         $c = expKatalystAccessService::customerForUser( (int)$userId, $chosen );
-        return $c ? $c : null;
+        // a user of the account without Katalyst's permission "tickets" opens and reads its own tickets only
+        return $c && self::mayTickets( (int)$userId, (int)$c->attribute( 'id' ) ) ? $c : null;
+    }
+
+    /**
+     * Whether a user may read and open the tickets of a Katalyst account: its owner always; a user of the account
+     * (Katalyst's users and permissions) with the permission "tickets". Katalyst without users: every linked user.
+     */
+    public static function mayTickets( $userId, $customerId )
+    {
+        return !class_exists( 'expKatalystAccountUsers' ) || expKatalystAccountUsers::may( (int)$userId, (int)$customerId, 'tickets' );
     }
 
     /** The key a new ticket of this user gets. */
@@ -79,8 +89,9 @@ class ticketsystemAccount
     {
         $keys = array( self::userKey( $userId ) );
         if ( $this->mode === 'katalyst' && (int)$userId > 0 )
-            foreach ( expKatalystAccessService::customerRowsForUser( (int)$userId ) as $row )
-                $keys[] = 'katalyst:' . (int)$row['id'];
+            foreach ( expKatalystAccessService::customerRowsForUser( (int)$userId, 'tickets' ) as $row )
+                if ( self::mayTickets( (int)$userId, (int)$row['id'] ) )
+                    $keys[] = 'katalyst:' . (int)$row['id'];
         return array_values( array_unique( $keys ) );
     }
 

@@ -23,6 +23,9 @@ of the user's account; **All** every ticket.
 - `katalyst`: a ticket belongs to the Katalyst customer the opener acts for (the customer console's account
   switcher), `katalyst:<customer id>`. Every user linked to that customer reads it with Scope Account.
   A user without a customer falls back to `user:<id>`.
+  With Katalyst's users and permissions (its doc/my-portal.md), only the account's owner and the users of the
+  account who hold the permission `tickets` share its tickets; a user without it opens and reads its own tickets
+  (`user:<id>`) only (`ticketsystemAccount::mayTickets()`).
 - `auto` (default): `katalyst` when the extension sevenx_katalyst is active, else `owner`.
 
 The account is taken from the signed-in user, never from the request.

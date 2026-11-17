@@ -28,6 +28,9 @@ after updating: it adds the tables `ticketsystem_cc` and `ticketsystem_time` and
 - Added: The fetch function `customer_summary`: a customer's open tickets (those waiting on the customer first), the
   resolved tickets still to rate and the counts, within the customer's read scope, for the support card of an account
   home (doc/views.md).
+- Updated: With Katalyst's users and permissions, a user of a customer account shares the account's tickets only with
+  the permission `tickets`; mails to the customer side of a ticket go into the account's e-mail history when Katalyst
+  keeps one (doc/permissions.md).
 - Added: `ticketsystem/new/(subscription)/<id>` preselects the site a new ticket is about, when it is one of the
   account's own ("Get help with this service").
 
