@@ -90,6 +90,8 @@ class ticketsystemService
         $now = time();
         $t = ticketsystemTicket::fetchByObjectID( (int)$object->attribute( 'id' ) );
         $db = eZDB::instance();
+        if ( !$t )
+            ticketsystemNumber::prepareTake( $settings );
         $db->begin();
         if ( !$t )
         {
@@ -223,6 +225,7 @@ class ticketsystemService
             return self::fail( 'Tickets cannot be stored right now. Please contact us another way.' );
 
         $db = eZDB::instance();
+        ticketsystemNumber::prepareTake( $this->settings );
         $db->begin();
         list( $number, $prefix, $year, $seq ) = ticketsystemNumber::take( $this->settings );
         $attributes = array( 'name' => $v['subject'], 'description' => ticketsystemText::toXml( $v['body'] ) );

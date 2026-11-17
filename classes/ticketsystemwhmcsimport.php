@@ -203,6 +203,7 @@ class ticketsystemWhmcsImport
         $have = ticketsystemService::classAttributes( $this->settings->ticketClass() );
         $priority = $this->priority( $w['urgency'] );
         $db = eZDB::instance();
+        ticketsystemNumber::prepareTake( $this->settings, $created );
         $db->begin();
         list( $number, $prefix, $year, $seq ) = ticketsystemNumber::take( $this->settings, $created );
         $attributes = array( 'name' => $subject, 'description' => ticketsystemText::toXml( $body ) );

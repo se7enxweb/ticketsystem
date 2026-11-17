@@ -37,7 +37,35 @@ class ticketsystemNumber
     }
 
     /**
-     * Takes the next value of the counter of $prefix and $year. Call inside the caller's transaction.
+     * Makes sure the counter row of $prefix and $year exists, outside any transaction (call it before the caller's
+     * begin()). On MySQL/MariaDB two transactions that lock a missing row with SELECT ... FOR UPDATE and then insert it
+     * deadlock each other (InnoDB's gap locks); with the row there, next() only locks and raises it. A row inserted by
+     * another process at the same moment is no error (the second insert is refused by the primary key and ignored).
+     * MongoDB makes its counter in next().
+     */
+    public static function prepare( $prefix, $year )
+    {
+        $db = eZDB::instance();
+        if ( strpos( strtolower( (string)$db->databaseName() ), 'mongo' ) === 0 || $db->transactionCounter() > 0 )
+            return;
+        $p = $db->escapeString( self::cleanPrefix( $prefix ) );
+        $y = (int)$year;
+        if ( $db->arrayQuery( "SELECT last_value FROM ticketsystem_counter WHERE prefix='$p' AND year=$y" ) )
+            return;
+        $max = $db->arrayQuery( "SELECT MAX(seq) AS m FROM ticketsystem_ticket WHERE prefix='$p' AND year=$y" );
+        $start = $max && $max[0]['m'] !== null ? (int)$max[0]['m'] : 0;
+        ticketsystemSchema::tryQuery( $db, "INSERT INTO ticketsystem_counter ( prefix, year, last_value ) VALUES ( '$p', $y, $start )" );
+    }
+
+    /** prepare() for the counter take() will use. */
+    public static function prepareTake( ?ticketsystemSettings $settings = null, $time = null )
+    {
+        $settings = $settings ?: ticketsystemSettings::instance();
+        self::prepare( self::cleanPrefix( $settings->value( 'NumberSettings', 'Prefix', 'TS' ) ), (int)date( 'Y', $time === null ? time() : (int)$time ) );
+    }
+
+    /**
+     * Takes the next value of the counter of $prefix and $year. Call inside the caller's transaction, after prepare().
      *
      * @return int
      */
