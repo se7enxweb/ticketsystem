@@ -7,6 +7,7 @@
 | `ticketsystem/view/<number>` | `read` | One ticket with every post, oldest first, the reply form, the details and the status actions. A ticket the user may not read answers **404**, like a number that does not exist. `ticketsystem/view/<index id>` redirects to the number. |
 | `ticketsystem/import` | `manage` | The WHMCS import ([import-whmcs.md](import-whmcs.md)): the export's counts, a dry run, what was imported; upload an export (`TicketImportUpload`, file `ImportFile`) and run the import (`TicketImportRun`). Counts only. |
 | `ticketsystem/mailin` | `manage` | Reply by e-mail ([mail-in.md](mail-in.md)): the settings in use and the latest inbound mails (time, result, ticket). |
+| `ticketsystem/time` | `report` | Time tracking (1.2, [time-tracking.md](time-tracking.md)): the entries of a period, the sums per account and staff member, `(format)/csv`. |
 | `ticketsystem/tickets` | `use` | The original list of ticketsystem 1.x (the folder `[TicketSettings] TicketNodeID`); without that folder it redirects to `ticketsystem/list`. |
 
 ## Forms
@@ -21,6 +22,12 @@ redirects (post/redirect/get) with a one-time message.
 | `TicketResolve` | view | `reply` | the customer marks the ticket solved |
 | `TicketReopen` | view | `reply` | the customer opens a solved ticket again |
 | `TicketSetStatus` | view | `manage` | staff set any status of `StaffChoices` |
+| `TicketCreate` with `TicketForUser` or `TicketForCustomer`, `TicketNotify` | new | `manage` | 1.2: a ticket for a customer ([staff-opened-tickets.md](staff-opened-tickets.md)) |
+| `TicketFollow`, `TicketUnfollow` | view | `read` | 1.2: follow the ticket by e-mail, or stop ([watchers.md](watchers.md)) |
+| `TicketCcAdd` (`TicketCcAddress`), `TicketCcRemove` (`TicketCcID`) | view | `reply` | 1.2: CC addresses |
+| `TicketWatchAdd` (`TicketWatcher`), `TicketWatchRemove` (`TicketWatcherID`) | view | `manage` | 1.2: staff watchers |
+| `TicketMerge` (`TicketMergeInto`), `TicketSplit` (`TicketSplitPosts[]`, `TicketSplitSubject`) | view | `manage` | 1.2: merge and split ([merge-split.md](merge-split.md)) |
+| `TicketTimeSpent`, `TicketTimeBillable`, `TicketTimeRemark` with `TicketReply` or `TicketNote`; `TicketTimeRemove` (`TicketTimeID`) | view | `manage` | 1.2: time tracking ([time-tracking.md](time-tracking.md)) |
 
 Limits: `[LimitSettings]` (subject length, message length, new tickets per user and hour).
 

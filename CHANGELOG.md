@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+Merge and split, followers and CC, time tracking, tickets for customers, automatic tickets. Run `bin/php/install.php`
+after updating: it adds the tables `ticketsystem_cc` and `ticketsystem_time` and the ticket columns `merged_into`,
+`time_minutes`, `billable_minutes` on every database.
+
+- Added: Merge of a duplicate into the ticket that stays, for tickets of the same account only: its posts, files,
+  internal notes, time and CC addresses move, its followers follow, and its number redirects to the ticket that stays
+  ([doc/merge-split.md](doc/merge-split.md)).
+- Added: Split of replies into a new ticket of the same opener and account, with their files, time and search index.
+- Added: Following and stopping for every reader; staff add and remove staff watchers; staff see who follows
+  ([doc/watchers.md](doc/watchers.md)).
+- Added: CC addresses (`[WatchSettings]`): a copy of every post, never a note; never matched to a user, no access, no
+  reply reference, so an answer from one never becomes a post; at most `MaxCC`, optionally only `CCDomains[]`.
+- Added: Time tracking (`[TimeSettings]`): minutes with a staff reply or note, billable unless an SLA or warranty
+  (Katalyst entitlements) covers the account; the Time card, the report `ticketsystem/time` with its CSV, and
+  `unbilled()` / `markBilled()` for billing integrations ([doc/time-tracking.md](doc/time-tracking.md)).
+- Added: Tickets staff open for a customer: `ticketsystem/new` with `(user)/<id>` or `(customer)/<Katalyst customer
+  id>`, with or without the opening mail; the customer is the opener ([doc/staff-opened-tickets.md](doc/staff-opened-tickets.md)).
+- Added: Automatic tickets (`ticketsystemAutoTicket`, `[AutoTicketSettings]`): an internal ticket per key that repeats
+  are added to, and a customer ticket once per key ([doc/auto-tickets.md](doc/auto-tickets.md)).
+- Updated: A virus scanner's own failure (exit code other than 1) refuses the file with "Files cannot be checked right
+  now" instead of naming a virus; the ClamAV set-up is documented ([doc/attachments.md](doc/attachments.md)).
+- Updated: Mails of a post go to the ticket's CC addresses too; the log line counts them.
+- Updated: The history names merges, splits, followers, CC changes, time entries and tickets opened for a customer.
+
+
 ## 1.1.0 (2026-11-17)
 
 The help desk for staff: assignment, notes, SLA, ratings, reports, canned replies, reply by e-mail, the WHMCS import,

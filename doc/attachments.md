@@ -12,6 +12,37 @@ Files of a new ticket, of a reply and of an internal note (`[AttachmentSettings]
   file before it is stored; `RequireScan=enabled` refuses every file while no scanner is set. Without a scanner the
   files are stored unscanned (the settings page of the administration says so).
 - The file name is cleaned (no path, no control characters, at most 200 characters).
+- The scanner's exit code: 0 clean; 1 a virus was found ("The file did not pass the virus check."); anything else the
+  scanner failed ("Files cannot be checked right now."). Every code but 0 refuses the file and is logged in
+  `var/log/ticketsystem.log` (the code only).
+
+## Virus scanning with ClamAV
+
+On Enterprise Linux 9 (EPEL) or Debian/Ubuntu:
+
+1. Install the scanner daemon and the signature updater: `dnf install clamav clamd clamav-update` (EPEL), or
+   `apt install clamav-daemon clamav-freshclam`. clamd needs about 1 GB of memory; with less to spare use
+   `clamscan` on demand instead (slower: it loads the signatures for every file).
+2. Configure clamd's local socket (EL: `/etc/clamd.d/scan.conf`: remove `Example`, set
+   `LocalSocket /run/clamd.scan/clamd.sock`, `LocalSocketGroup virusgroup`, `LocalSocketMode 660`, and
+   `StreamMaxLength`, `MaxFileSize` above `MaxFileSize` of the help desk, e.g. 30M) and remove `Example` from
+   `/etc/freshclam.conf`.
+3. Let the web server's PHP user use the socket: add it to the socket's group (`usermod -a -G virusgroup <user>`) and
+   reload PHP-FPM, so its workers get the group.
+4. Fetch the signatures and start both services: `freshclam`, `systemctl enable --now clamav-freshclam clamd@scan`.
+5. Set the command in `settings/override/ticketsystem.ini.append.php`:
+
+   ```ini
+   [AttachmentSettings]
+   ScanCommand=clamdscan --no-summary --fdpass --config-file=/etc/clamd.d/scan.conf %file
+   RequireScan=enabled
+   ```
+
+   `--fdpass` hands the open file to clamd, so clamd needs no read access to PHP's upload directory.
+   `RequireScan=enabled` refuses every file while the command is missing.
+6. Check it with the EICAR test string (a harmless file every scanner reports): a `.txt` file with
+   `X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*` is refused, an ordinary text file is
+   accepted.
 
 ## Storage
 

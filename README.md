@@ -33,6 +33,16 @@ PHP 8.0 to 8.5, and it was cleaned up, re-documented and extended.
   ([doc/mail-in.md](doc/mail-in.md)).
 - **WHMCS import** (1.1): past WHMCS tickets become help desk tickets of their customers (by WHMCS client id), as
   history, silently and only once; a dry run by default ([doc/import-whmcs.md](doc/import-whmcs.md)).
+- **Merge and split** (1.2): a duplicate into the ticket that stays (same account only; posts, files, notes and
+  followers move, the old number redirects), replies off into a new ticket ([doc/merge-split.md](doc/merge-split.md)).
+- **Followers, watchers and CC** (1.2): follow or stop, staff add staff watchers, CC addresses get a copy of every post
+  without ever becoming an identity ([doc/watchers.md](doc/watchers.md)).
+- **Time tracking** (1.2): minutes with a reply or note, billable unless an SLA or warranty covers the account, a
+  report and a CSV; billing integrations mark what they billed ([doc/time-tracking.md](doc/time-tracking.md)).
+- **Tickets for customers** (1.2): staff open a ticket on behalf of a customer, with or without the mail
+  ([doc/staff-opened-tickets.md](doc/staff-opened-tickets.md)).
+- **Automatic tickets** (1.2): other extensions and jobs open an internal ticket per problem, repeats are added to it
+  ([doc/auto-tickets.md](doc/auto-tickets.md)).
 - **Every database of the kernel** (1.1): MySQL/MariaDB, PostgreSQL, SQLite, Oracle and MongoDB, from one schema
   definition; the installer also upgrades the tables of an older release.
 - **Mobile-first views**, light and dark, with no inline CSS; inside the Katalyst customer console they use its
@@ -86,6 +96,11 @@ Then activate the extension and run the installer; see [doc/install.md](doc/inst
 | Search | [doc/search.md](doc/search.md) |
 | Reports and the CSV export | [doc/reports.md](doc/reports.md) |
 | Canned replies and macros | [doc/canned-replies.md](doc/canned-replies.md) |
+| Merge and split | [doc/merge-split.md](doc/merge-split.md) |
+| Followers, watchers and CC | [doc/watchers.md](doc/watchers.md) |
+| Time tracking | [doc/time-tracking.md](doc/time-tracking.md) |
+| Tickets staff open for a customer | [doc/staff-opened-tickets.md](doc/staff-opened-tickets.md) |
+| Automatic tickets | [doc/auto-tickets.md](doc/auto-tickets.md) |
 | The workflow event | [doc/workflow.md](doc/workflow.md) |
 | Coming from ticketsystem 1.x | [doc/upgrade.md](doc/upgrade.md) |
 

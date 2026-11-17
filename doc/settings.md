@@ -57,6 +57,11 @@ All in `settings/ticketsystem.ini`, each with a comment there. Override them in
 | | MaxFileSize, MaxFiles | 25, 5 | MB per file, files per post |
 | | AllowedExtensions[] | pdf, png, jpg, ... eml | the extensions accepted; the content must match |
 | | ScanCommand, RequireScan | empty, disabled | the virus scanner (`%file`; exit 0 = clean); refuse every file without one |
+| | ScanCommand exit codes | | 0 clean, 1 virus found, anything else scanner error; ClamAV set-up in [attachments.md](attachments.md) |
+| WatchSettings | MaxCC, CCDomains[], RefusedCC[] | 5, none, none | CC addresses ([watchers.md](watchers.md)) |
+| TimeSettings | Enabled, Increment, MaxMinutes | enabled, 1, 1440 | time tracking ([time-tracking.md](time-tracking.md)) |
+| | DefaultBillable, KatalystEntitlements, CoveredLevels[] | uncovered, enabled, none | billable unless an SLA or warranty covers the account |
+| AutoTicketSettings | Enabled, OpenerUserID, Category, Priority, Notify, CustomerTickets | enabled, 14, '', high, enabled, enabled | automatic tickets ([auto-tickets.md](auto-tickets.md)) |
 | LimitSettings | MaxSubjectLength, MaxBodyLength | 200, 50000 | characters |
 | | MaxOpenPerHour | 10 | new tickets per user and hour |
 | | ListLimit | 25 | tickets per page |

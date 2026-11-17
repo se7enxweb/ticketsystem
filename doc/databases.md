@@ -25,7 +25,7 @@ The tests check that every file is current.
 
 | Table | Holds |
 |---|---|
-| `ticketsystem_ticket` | the index of tickets: number, account, status, queue, priority (and its rank), assignee, SLA times and escalation, rating, counts |
+| `ticketsystem_ticket` | the index of tickets: number, account, status, queue, priority (and its rank), assignee, SLA times and escalation, rating, counts; 1.2: `merged_into`, `time_minutes`, `billable_minutes` |
 | `ticketsystem_counter` | the last ticket number per prefix and year |
 | `ticketsystem_note` | internal notes ([notes.md](notes.md)) |
 | `ticketsystem_event` | the history of every change |
@@ -34,8 +34,14 @@ The tests check that every file is current.
 | `ticketsystem_post` | the text of customer-visible posts for the staff search |
 | `ticketsystem_mailin` | inbound mails handled (reply by e-mail) |
 | `ticketsystem_import` | what imported records became |
+| `ticketsystem_escalation` | the escalation steps taken, once per ticket and step ([sla.md](sla.md)) |
+| `ticketsystem_cc` | 1.2: CC addresses of tickets ([watchers.md](watchers.md)) |
+| `ticketsystem_time` | 1.2: time entries ([time-tracking.md](time-tracking.md)); its remark column is `remark`, as `comment` is reserved on Oracle |
 
 ## Portable queries
+
+The time report filters by a list of ticket ids (`ticket_id IN (...)`, in chunks Oracle takes) instead of a subquery
+with the reader's scope: the SQL layer of the MongoDB driver does not read an `OR` inside an `IN` subquery.
 
 The queries stay inside what every driver runs, so there is no branch per database except the ticket number counter on
 MongoDB (an atomic `$inc`, as there is no row lock): single-table `SELECT` with `WHERE` (`=`, `<>`, `<`, `>`,
