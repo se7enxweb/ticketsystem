@@ -35,11 +35,13 @@ The form posts (`ReportRun`, with the form token) and is redirected to the view 
 - **Workload**: per staff member, the tickets not solved assigned to them now, their replies in the period and the
   number of tickets those replies went to; "Nobody" holds the unassigned tickets.
 
-SLA and satisfaction figures come from the SLA part's own aggregate,
-`ticketsystemFunctionCollection::fetchCsatSummary( $from, $to, $queue )`, when it exists (it answers `result` with
-`count`, `avg`, `dist`, `response_met`, `response_total`, `resolution_met`, `resolution_total`); until then the report
-counts them from the index columns (`rating`, `response_due`, `resolve_due`, `responded`, `resolved`) and says where
-they came from (`data-ts-source` on the satisfaction figure: `fetch`, `index` or `off`).
+Satisfaction comes from the SLA part's aggregate, the fetch function `csat_summary`
+(`ticketsystemFunctionCollection::csatSummary( $from, $to, $queue )`, [csat.md](csat.md)): the ratings given in the
+period, their average, the share of satisfied customers and the response rate of the rating mails. It counts every
+ticket, so it is used for readers who read every ticket (Scope All); for a reader with a narrower scope the report
+counts the ratings of the tickets opened in the period within that scope. SLA attainment is counted from the index
+columns (`response_due`, `resolve_due`, `responded`, `resolved`) that the SLA timers keep ([sla.md](sla.md)). The
+satisfaction figure says where it came from (`data-ts-source`: `fetch`, `index` or `off`).
 
 Every part counts at most `[ReportSettings] MaxRows` tickets; a period with more says so.
 

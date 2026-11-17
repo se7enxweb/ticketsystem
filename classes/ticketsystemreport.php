@@ -166,7 +166,7 @@ class ticketsystemReport
                       'first_response' => array( 'count' => 0, 'avg_minutes' => 0, 'median_minutes' => 0 ),
                       'resolution' => array( 'count' => 0, 'avg_hours' => 0, 'median_hours' => 0 ),
                       'sla' => array( 'response_met' => 0, 'response_total' => 0, 'resolution_met' => 0, 'resolution_total' => 0 ),
-                      'csat' => array( 'count' => 0, 'avg' => 0, 'dist' => array( 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0 ) ) );
+                      'csat' => array( 'count' => 0, 'avg' => 0, 'dist' => array( 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0 ), 'satisfied_pct' => null, 'response_rate' => null ) );
         $responses = array();
         $resolutions = array();
         $scores = array();
@@ -511,20 +511,22 @@ class ticketsystemReport
         $out['backlog'] = self::backlog( $open, $now );
         $out['workload'] = self::workload( $open, $this->staffReplies( $from, $to, $parts ) );
         $out['truncated'] = $truncated;
-        // satisfaction and SLA from the SLA part's own aggregate when it is there (doc/reports.md)
-        if ( is_callable( array( 'ticketsystemFunctionCollection', 'fetchCsatSummary' ) )
-             && method_exists( 'ticketsystemFunctionCollection', 'fetchCsatSummary' ) )
+        // satisfaction from the SLA part's aggregate (fetch csat_summary: the ratings given in the period) when it is
+        // there and the reader reads every ticket (it counts every ticket); else from the tickets of the reader's scope
+        $out['figures']['csat']['satisfied_pct'] = null;
+        $out['figures']['csat']['response_rate'] = null;
+        if ( $this->access->scope( 'read' ) >= ticketsystemAccess::ALL && class_exists( 'ticketsystemFunctionCollection' )
+             && method_exists( 'ticketsystemFunctionCollection', 'csatSummary' ) )
         {
-            $r = ticketsystemFunctionCollection::fetchCsatSummary( (int)$from, (int)$to, (string)$queue );
+            $r = ticketsystemFunctionCollection::csatSummary( (int)$from, (int)$to, (string)$queue );
             if ( is_array( $r ) && isset( $r['result'] ) && is_array( $r['result'] ) )
             {
                 $c = $r['result'];
                 foreach ( array( 'count', 'avg', 'dist' ) as $k )
                     if ( isset( $c[$k] ) )
                         $out['figures']['csat'][$k] = $c[$k];
-                foreach ( array( 'response_met', 'response_total', 'resolution_met', 'resolution_total' ) as $k )
-                    if ( isset( $c[$k] ) )
-                        $out['figures']['sla'][$k] = (int)$c[$k];
+                $out['figures']['csat']['satisfied_pct'] = isset( $c['csat'] ) && !empty( $c['count'] ) ? (int)$c['csat'] : null;
+                $out['figures']['csat']['response_rate'] = isset( $c['response_rate'] ) && !empty( $c['asked'] ) ? (int)$c['response_rate'] : null;
                 $out['csat_source'] = 'fetch';
             }
         }
