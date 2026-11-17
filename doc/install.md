@@ -34,9 +34,10 @@
    forms), in the site's main rule file:
    ```
    [SITE-TICKETS-POST] allow POST **/ticketsystem/new **/ticketsystem/view/**
+   [SITE-TICKETS-RATE] allow POST **/ticketsystem/rate/**
    ```
-8. Optional: the cronjob part `ticketsystem` closes resolved tickets (`php runcronjobs.php -s <front> ticketsystem`,
-   e.g. hourly).
+8. The cronjob part `ticketsystem` runs the SLA escalation and closes resolved tickets
+   (`php runcronjobs.php -s <front> ticketsystem`, every 5 minutes; [sla.md](sla.md)).
 9. Link the help desk from the site, e.g. `ticketsystem/list` in the user menu.
 
 Support staff are put into the group "Technical Support Group". They work in the same views as customers and see

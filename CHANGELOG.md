@@ -21,6 +21,21 @@ Work in progress for 1.1 (on main, not released).
   and the staff search (ticketsystem/reports, ticketsystem/search, policy function report), reply by e-mail
   (bin/php/mailin.php, [MailInSettings]) and the WHMCS import (bin/php/whmcs_export.php, bin/php/import_whmcs.php,
   [ImportSettings]).
+- Added: SLA timers on business hours: targets per SLA level, priority and queue ([SLA_<level>], minutes or texts
+  such as "8 business hours"), working days, hours, holidays and time zone ([SLASettings]), the Katalyst SLA levels
+  per plan, the clock paused while the ticket waits on the customer or is resolved (the due times move on by the
+  working time paused), the state on track / due soon / breached / paused on the staff list, the ticket page and the
+  SLA board ticketsystem/sla, and a hint for customers when the first answer is due (doc/sla.md).
+- Added: Escalation in steps ([SLASettings] EscalationSteps[]): notify the assignee, then the queue leads
+  (QueueLeads[]) or the support group, raise the priority, mark the ticket escalated; run by the cronjob part
+  ticketsystem, each step once per ticket and target (the escalation log ticketsystem_escalation and a lock), mails to
+  staff only, every step in the history and the log.
+- Added: Satisfaction ratings: the mail "How did we do?" when a ticket is resolved or closed, with a signed link per
+  score (1 to 5) that works once and without sign-in (ticketsystem/rate), never for the imported WHMCS history; the
+  results for staff (ticketsystem/satisfaction) and the fetch functions csat_summary and csat_latest for reports
+  (doc/csat.md).
+- Added: Fetch functions sla, sla_board, escalations and rating (modules/ticketsystem/function_definition.php).
+- Updated: SLA and ratings are on by default.
 - Added: Administration pages in the design admin4 and the tab TicketSystem with its left menu (settings/menu.ini).
 - Updated: Every table of the help desk is defined in ticketsystemSchema and created (or completed with the columns
   of a newer release) by the installer on MySQL, PostgreSQL, SQLite, Oracle and MongoDB; every sql/<engine> file and
