@@ -1,0 +1,40 @@
+{
+    "name": "se7enxweb/ticketsystem",
+    "description": "ticketsystem for Exponential: help desk tickets as content objects, with readable ticket numbers, status sets, customer-scoped sharing, mail copies of every post and Exponential notification subscriptions. The 7x take-over of the xrow ticketsystem extension.",
+    "type": "ezpublish-legacy-extension",
+    "keywords": [
+        "Exponential",
+        "extension",
+        "help desk",
+        "helpdesk",
+        "tickets",
+        "support",
+        "ticketsystem"
+    ],
+    "homepage": "https://github.com/se7enxweb/ticketsystem",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "7x",
+            "homepage": "https://se7enx.com",
+            "role": "Maintainer"
+        },
+        {
+            "name": "xrow GbR",
+            "homepage": "https://www.xrow.de",
+            "role": "Original author"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/se7enxweb/ticketsystem/issues",
+        "source": "https://github.com/se7enxweb/ticketsystem",
+        "docs": "https://github.com/se7enxweb/ticketsystem/tree/main/doc"
+    },
+    "require": {
+        "php": ">=8.0",
+        "se7enxweb/exponential-legacy-installer": "*"
+    },
+    "extra": {
+        "ezpublish-legacy-extension-name": "ticketsystem"
+    }
+}
