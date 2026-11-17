@@ -28,7 +28,7 @@ Shown[navigation]=true
 Shown[browse]=true
 PolicyList[]=ticketsystem/manage
 
-# The left menu of the tab in admin4 (design/admin4/templates/parts/ticketsystem/menu.tpl draws it with
+# The left menu of the tab in admin4 and admin4l (design/admin4/templates/parts/ticketsystem/menu.tpl draws it with
 # parts/ini_menu.tpl, so the current page is marked as in every other admin4 section; design/admin keeps its own
 # list). "Not resolved" carries (status)/active, so it is not also marked on the other lists below ticketsystem/list.
 # Import is left out unless [ImportSettings] Enabled=enabled (the template passes it as a hidden link).
@@ -55,6 +55,7 @@ GroupLinks_manage[]=reports
 GroupLinks_manage[]=search
 GroupLinks_manage[]=canned
 GroupLinks_manage[]=sla
+GroupLinks_manage[]=satisfaction
 GroupLinks_manage[]=queues
 GroupLinks_manage[]=mail
 GroupLinks_manage[]=import
@@ -84,8 +85,10 @@ Links[search]=ticketsystem/search
 PolicyList_search[]=ticketsystem/report
 Links[canned]=ticketsystem/canned
 PolicyList_canned[]=ticketsystem/manage
-Links[sla]=ticketsystem/settings/sla
+Links[sla]=ticketsystem/sla
 PolicyList_sla[]=ticketsystem/manage
+Links[satisfaction]=ticketsystem/satisfaction
+PolicyList_satisfaction[]=ticketsystem/report
 Links[queues]=ticketsystem/settings/queues
 PolicyList_queues[]=ticketsystem/manage
 Links[mail]=ticketsystem/settings/mail

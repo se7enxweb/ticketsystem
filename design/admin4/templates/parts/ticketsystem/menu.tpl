@@ -4,7 +4,9 @@
    switch every admin4 left menu ends with. The import link only when [ImportSettings] Enabled=enabled. The classic
    design/admin draws its own list (design/admin/templates/parts/ticketsystem/menu.tpl). *}
 {def $tsI = 'extension/ticketsystem'}
-{include uri='design:parts/ini_menu.tpl' ini_section='Leftmenu_ticketsystem'
+{* uri_string: the address with its view parameters, so the lists below ticketsystem/list are marked too (the
+   kernel's $uri_string leaves them out) *}
+{include uri='design:parts/ini_menu.tpl' ini_section='Leftmenu_ticketsystem' uri_string=$requested_uri_string|trim( '/' )
          hidden_links=cond( ezini( 'ImportSettings', 'Enabled', 'ticketsystem.ini' )|eq( 'enabled' ), array(), array( 'import' ) )
          i18n_hash=hash(
     'ticketsystem', 'TicketSystem'|i18n( $tsI ),
@@ -21,6 +23,7 @@
     'search',     'Search'|i18n( $tsI ),
     'canned',     'Canned replies'|i18n( $tsI ),
     'sla',        'SLA and escalation'|i18n( $tsI ),
+    'satisfaction', 'Satisfaction'|i18n( $tsI ),
     'queues',     'Queues and categories'|i18n( $tsI ),
     'mail',       'Mail, files and ratings'|i18n( $tsI ),
     'import',     'Import (WHMCS)'|i18n( $tsI ),

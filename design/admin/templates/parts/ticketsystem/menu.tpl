@@ -32,10 +32,11 @@
     {if $tsReport}
     <li><a href={'ticketsystem/reports'|ezurl}>{'Reports'|i18n( $tsI )}</a></li>
     <li><a href={'ticketsystem/search'|ezurl}>{'Search'|i18n( $tsI )}</a></li>
+    <li><a href={'ticketsystem/satisfaction'|ezurl}>{'Satisfaction'|i18n( $tsI )}</a></li>
     {/if}
     {if $tsStaff}
     <li><a href={'ticketsystem/canned'|ezurl}>{'Canned replies'|i18n( $tsI )}</a></li>
-    <li><a href={'ticketsystem/settings/sla'|ezurl}>{'SLA and escalation'|i18n( $tsI )}</a></li>
+    <li><a href={'ticketsystem/sla'|ezurl}>{'SLA and escalation'|i18n( $tsI )}</a></li>
     <li><a href={'ticketsystem/settings/queues'|ezurl}>{'Queues and categories'|i18n( $tsI )}</a></li>
     <li><a href={'ticketsystem/settings/mail'|ezurl}>{'Mail, files and ratings'|i18n( $tsI )}</a></li>
     {if $tsImport}<li><a href={'ticketsystem/settings/import'|ezurl}>{'Import (WHMCS)'|i18n( $tsI )}</a></li>{/if}

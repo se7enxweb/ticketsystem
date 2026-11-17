@@ -28,14 +28,14 @@ view afterwards; a signed-in user without the policy gets the kernel's "Access d
 ## The administration: the tab TicketSystem
 
 In an administration siteaccess (its `SiteDesign` or an additional design is `admin*`: admin4, admin4l ...) the views
-render the templates of `design/admin4/templates/ticketsystem/` inside the admin page frame, with or without Katalyst:
+render the templates of `design/admin/templates/ticketsystem/` (admin4 and admin4l find them through their design fallback to admin; the classic design admin draws them with its copy of `components.css`) inside the admin page frame, with or without Katalyst:
 
 - **The tab** "TicketSystem" (`settings/menu.ini.append.php`, navigation part `ezticketsystemnavigationpart`) opens
   `ticketsystem/list`. It is shown to users with `ticketsystem/manage` ([permissions.md](permissions.md)). With
   Katalyst it stands next to Katalyst's own tab "Tickets", which reads the same tickets.
-- **The left menu** (`design:parts/ticketsystem/menu.tpl`): the lists (Not resolved, Needs a staff reply, Assigned
+- **The left menu**: in admin4 and admin4l menu.ini `[Leftmenu_ticketsystem]` drawn by `parts/ini_menu.tpl` with the groups Tickets and Manage, the current page marked (`design/admin4/templates/parts/ticketsystem/menu.tpl`); in the classic design admin a plain list (`design/admin/templates/parts/ticketsystem/menu.tpl`). The lists (Not resolved, Needs a staff reply, Assigned
   to me, Unassigned, Urgent, Escalated, Resolved or closed, All tickets, New ticket), then the management pages
-  (Reports, Search, Canned replies, SLA and escalation, Queues and categories, Mail, files and ratings; Import only
+  (Reports, Search, Canned replies, SLA and escalation (the board `ticketsystem/sla`), Satisfaction, Queues and categories, Mail, files and ratings; Import only
   when `[ImportSettings] Enabled=enabled`). Each list is a link with view parameters.
 - **The list**, top down: the page head, the status figures (each a link to the same filter with that status), the
   filter bar (it posts and is redirected to view parameters), the active filters as removable chips, the sortable
@@ -46,7 +46,7 @@ render the templates of `design/admin4/templates/ticketsystem/` inside the admin
 
 The pages use only the shared components of admin4 (`components.css`: `.a4-page`, `.a4-card`, `.a4-table`,
 `.a4-filterbar`, `.a4-figures`, `.a4-facts`, `.a4-btn` ...) and one rule set of their own,
-`design/admin4/stylesheets/modules/ticketsystem.css` (`.a4-ticketsystem-post`, tokens only). No `<style>`, no
+`design/admin/stylesheets/modules/ticketsystem.css` (`.a4-ticketsystem-post`, tokens only). No `<style>`, no
 `style=""`, no colour of their own; `tests/ticketsystemAdminStylingTest.php` checks it, and that a table has no row
 headers (an `.a4-table` header is upper case and does not wrap) and that every fact of `.a4-facts` is a `<div>`
 with its `<dt>` and `<dd>`.
@@ -60,5 +60,5 @@ with its `<dt>` and `<dd>`.
 | `ticketsystem/canned` | `canned` | the canned replies and macros: list, `(edit)/new`, `(edit)/<id>` ([canned-replies.md](canned-replies.md)) |
 
 Each has a plain template in `design/standard/templates/ticketsystem/` and one for the administration in
-`design/admin4/templates/ticketsystem/`. Every filter form posts with the form token and is redirected to view
+`design/admin/templates/ticketsystem/`. Every filter form posts with the form token and is redirected to view
 parameters; none of the views reads GET parameters.
