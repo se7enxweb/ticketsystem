@@ -51,14 +51,18 @@ staff page `ticketsystem/mailin` shows the latest results.
 ### A: poll a mailbox (cronjob)
 
 The cronjob part `ticketsystem_mailin` fetches the mail of an IMAP or POP3 mailbox (plain PHP streams, no PHP
-extension):
+extension). The mailbox can be **on any mail server** the web host can reach: the site's own server, a separate
+mail or Plesk server, or a hosted service. Nothing has to run on the mail server itself; see
+[the mailbox](#the-mailbox) below for what it must offer.
 
 ```ini
 # settings/override/ticketsystem.ini.append.php
 [MailInSettings]
 Enabled=enabled
+ReplyAddress=support+%token@example.com
 Protocol=imap
 Host=mail.example.com
+Port=0
 Encryption=ssl
 User=support@example.com
 Password=...
@@ -109,26 +113,83 @@ See `[MailInSettings]` in `settings/ticketsystem.ini`: `Enabled`, `ReplyAddress`
 `Folder`, `TicketMailOnly`, `DoneFolder`. Keep the mailbox password in `settings/override`, never in the
 extension.
 
-## Switching it on for se7enx.com (support@se7enx.com)
+## The mailbox
 
-The live mailbox, its forwarding and the Plesk mail settings stay as they are; nothing below changes them.
+Any IMAP (or POP3) mailbox works. It does not have to be on the server of the site, and the site's sender address
+does not have to change: ticket mails keep their `From` (`[MailSettings] Sender`), only the `Reply-To` names the help
+desk mailbox, so SPF, DKIM and DMARC of the sender's domain are not affected. What the mail server must offer:
 
-1. Deploy this version and run `bin/php/install.php` (creates `ticketsystem_mailin` where it is missing).
-2. In `settings/override/ticketsystem.ini.append.php` of se7enx.com:
+- **Mail for the address arrives there**: the domain of `ReplyAddress` has an MX record pointing to that server (a
+  domain without MX is delivered to its A record, but an explicit MX is the reliable choice).
+- **`+` addresses reach the mailbox** for the token in `ReplyAddress` (`help+ts.…@example.com`). Postfix does this
+  with `recipient_delimiter = +` (Plesk sets it), Google Workspace always. Without it, leave `%token` out
+  (`ReplyAddress=help@example.com`): replies are still matched by the reference in `In-Reply-To`.
+- **IMAPS reachable from the web host** (port 993 by default, any other with `Port`), with a certificate valid for the
+  name in `Host`: `VerifyPeer=enabled` checks it, and the name is sent as SNI, so a server with one certificate per
+  name hands out the right one.
+- **A mailbox of its own is best.** With IMAP and `TicketMailOnly=enabled` a shared mailbox works too: only ticket
+  replies are fetched, every other mail stays unread.
+
+### Example: a mailbox on a separate Plesk server
+
+The site runs on one server, the mailbox is on another Plesk server (`mail.example.net`), under a domain or domain
+alias there with the mail service on:
+
+1. On the mail server: `plesk bin mail --create help@example.net -mailbox true -passwd ''` with the password in the
+   environment variable `PSA_PASSWORD` (so it is not on a command line). Check `postconf recipient_delimiter` (`+`).
+2. A certificate for the IMAP host name: Plesk uses a domain's certificate for mail when it is chosen for mail
+   (`plesk bin domain_pref --update mail.example.net -mail_certificate "<certificate name>"`); otherwise Dovecot
+   answers with the server's default certificate. Check from the web host:
+   `openssl s_client -connect mail.example.net:993 -servername mail.example.net -verify_return_error`.
+3. DNS: `example.net. MX 10 mail.example.net.` where the zone is served.
+4. On the site:
    ```ini
    [MailInSettings]
    Enabled=enabled
-   ReplyAddress=support+%token@se7enx.com
+   ReplyAddress=help+%token@example.net
    Protocol=imap
-   Host=<the mail host of se7enx.com>
+   Host=mail.example.net
+   Port=993
    Encryption=ssl
-   User=support@se7enx.com
+   User=help@example.net
    Password=<the mailbox password>
+   TicketMailOnly=enabled
+   ```
+   If Dovecot listens for IMAPS on another port, put that port in `Port`. When the address is on a domain alias, the
+   login (`User`) is the address under the main domain of the subscription.
+
+### Example: Google Workspace
+
+The help desk address is a Google Workspace mailbox (or an alias of one, such as `support@example.com`):
+
+1. Turn on 2-step verification for that account and create an **app password** for it; IMAP must be allowed for the
+   user in the admin console.
+2. On the site:
+   ```ini
+   [MailInSettings]
+   Enabled=enabled
+   ReplyAddress=support+%token@example.com
+   Protocol=imap
+   Host=imap.gmail.com
+   Port=993
+   Encryption=ssl
+   User=support@example.com
+   Password=<the app password>
    TicketMailOnly=enabled
    DoneFolder=
    ```
-   `+` addresses reach the support@ mailbox already (Postfix `recipient_delimiter = +`).
+   Gmail delivers `+` addresses to the mailbox. A handled mail is marked read; with `DoneFolder` (a label) it moves
+   there.
+
+## Switching it on
+
+1. Deploy this version and run `bin/php/install.php` (creates `ticketsystem_mailin` where it is missing).
+2. Put the mailbox into `[MailInSettings]` of `settings/override/ticketsystem.ini.append.php` (as above). The file
+   holds a password: readable only by the site's user and the web server (for example 0640).
 3. Clear the INI cache, then add the cron line (as the site user):
    `* * * * * cd <site root> && php runcronjobs.php -q -s <siteaccess> ticketsystem_mailin`.
-4. Test: reply to a ticket mail of a test ticket; within a minute the reply is on the ticket and
-   `ticketsystem/mailin` shows `posted`.
+   `php extension/ticketsystem/bin/php/mailin.php -s <siteaccess> --poll` runs it once by hand and says how many
+   mails it handled, or why it could not log in.
+4. Test with a test user and a test ticket: the ticket mail carries `Reply-To: help+ts.<number>.<user>.<signature>@…`;
+   a reply to it is on the ticket within a minute and `ticketsystem/mailin` shows `posted`; a reply from an address
+   that is no user of the site shows `quarantined`.

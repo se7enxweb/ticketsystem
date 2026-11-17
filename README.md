@@ -28,8 +28,9 @@ PHP 8.0 to 8.5, and it was cleaned up, re-documented and extended.
 - **Attachments** (1.1): files of tickets, replies and notes, checked (size, type, content, an optional virus
   scanner), stored outside the public storage, served only to readers of the ticket.
 - **Reply by e-mail** (1.1): an answer to a ticket mail becomes a post on its ticket; every mail carries a signed
-  reference of its ticket and reader, the sender is checked, quoted text is cut. From an IMAP/POP3 mailbox or a mail
-  server pipe ([doc/mail-in.md](doc/mail-in.md)).
+  reference of its ticket and reader, the sender is checked, quoted text is cut. From an IMAP/POP3 mailbox on any mail
+  server (the site's own, a separate Plesk server, Google Workspace) or a mail server pipe
+  ([doc/mail-in.md](doc/mail-in.md)).
 - **WHMCS import** (1.1): past WHMCS tickets become help desk tickets of their customers (by WHMCS client id), as
   history, silently and only once; a dry run by default ([doc/import-whmcs.md](doc/import-whmcs.md)).
 - **Every database of the kernel** (1.1): MySQL/MariaDB, PostgreSQL, SQLite, Oracle and MongoDB, from one schema
