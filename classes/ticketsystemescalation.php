@@ -53,8 +53,9 @@ class ticketsystemEscalation
      *
      * @return array checked, steps, mails, warned (tickets that reached level 1), breached (level 2), locked (another
      *               run holds the lock)
+     * @param int[] $onlyIds only these tickets (tests); empty = every active ticket with a target
      */
-    public function run( $now = null, $dryRun = false )
+    public function run( $now = null, $dryRun = false, array $onlyIds = array() )
     {
         $out = array( 'checked' => 0, 'steps' => 0, 'mails' => 0, 'warned' => 0, 'breached' => 0, 'locked' => false, 'due' => array() );
         if ( !$this->sla->enabled() )
@@ -71,6 +72,8 @@ class ticketsystemEscalation
             $set = $this->settings->statusSet();
             $where = ticketsystemDesk::statusCondition( $set->active(), ticketsystemDesk::quoter() );
             $where = ( $where !== '' ? $where . ' AND ' : '' ) . '( response_due > 0 OR resolve_due > 0 )';
+            if ( $onlyIds )
+                $where .= ' AND id IN (' . implode( ', ', array_map( 'intval', $onlyIds ) ) . ')';
             for ( $offset = 0; ; $offset += 200 )
             {
                 $batch = ticketsystemTicket::fetchWhere( $where, $offset, 200, 'id ASC' );
