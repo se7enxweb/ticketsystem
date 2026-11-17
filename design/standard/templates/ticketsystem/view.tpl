@@ -63,11 +63,14 @@
     <form class="ktl-form ts-form" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl} id="ts-reply-form" enctype="multipart/form-data">
         <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
         {if and( $is_staff, $canned|count )}
-        <div class="ktl-field ts-field">
+        {* a plain select and a submit button that work without JavaScript; ticketsystem-canned.js inserts the text at
+           the cursor instead and chooses the macro's status (data-ts-canned-*) *}
+        {ezscript_require( array( 'ticketsystem-canned.js' ) )}
+        <div class="ktl-field ts-field" data-ts-canned data-ts-canned-target="ts-body" data-ts-canned-status="ts-reply-status">
             <label for="ts-canned">{'Canned reply'|i18n( $tsI )}</label>
             <select class="ktl-input ts-input" id="ts-canned" name="TicketCanned"><option value="0">{'None'|i18n( $tsI )}</option>
-            {foreach $canned as $tsC}<option value="{$tsC.id}"{if $tsC.id|eq( $canned_chosen )} selected="selected"{/if}>{$tsC.title|wash}{if $tsC.macro} ({'macro'|i18n( $tsI )}){/if}</option>{/foreach}</select>
-            <p class="ktl-actions ts-actions"><button type="submit" class="ktl-btn is-ghost ts-btn is-ghost" name="TicketInsertCanned" value="1" id="ts-insert-canned">{'Insert the text'|i18n( $tsI )}</button></p>
+            {foreach $canned as $tsC}<option value="{$tsC.id}" data-ts-text="{$tsC.text|wash}" data-ts-status="{$tsC.set_status|wash}"{if $tsC.id|eq( $canned_chosen )} selected="selected"{/if}>{$tsC.title|wash}{if $tsC.macro} ({'macro'|i18n( $tsI )}){/if}</option>{/foreach}</select>
+            <p class="ktl-actions ts-actions"><button type="submit" class="ktl-btn is-ghost ts-btn is-ghost" name="TicketInsertCanned" value="1" id="ts-insert-canned" data-ts-canned-insert>{'Insert the text'|i18n( $tsI )}</button></p>
         </div>
         {/if}
         <div class="ktl-field ts-field">

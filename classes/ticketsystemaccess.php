@@ -99,6 +99,44 @@ class ticketsystemAccess
         return $this->may( 'manage' );
     }
 
+    /**
+     * What the policy ticketsystem/canned allows (pure): 'personal' (one's own canned replies) and/or 'shared' (the
+     * ones of the whole team), by the limitation CannedScope (1 Personal, 2 Shared; none: both).
+     *
+     * @param array $result eZUser::hasAccessTo()
+     * @return array personal => bool, shared => bool
+     */
+    public static function cannedScopesOf( array $result )
+    {
+        $word = isset( $result['accessWord'] ) ? $result['accessWord'] : 'no';
+        $out = array( 'personal' => $word === 'yes', 'shared' => $word === 'yes' );
+        if ( $word !== 'limited' )
+            return $out;
+        foreach ( isset( $result['policies'] ) ? (array)$result['policies'] : array() as $limits )
+        {
+            if ( !isset( $limits['CannedScope'] ) )
+                return array( 'personal' => true, 'shared' => true );
+            foreach ( (array)$limits['CannedScope'] as $v )
+            {
+                if ( (string)$v === '1' )
+                    $out['personal'] = true;
+                if ( (string)$v === '2' )
+                    $out['shared'] = true;
+            }
+        }
+        return $out;
+    }
+
+    /** The canned replies this user may keep: personal => bool, shared => bool (staff only). */
+    public function cannedScopes()
+    {
+        if ( !isset( $this->cache['canned'] ) )
+            $this->cache['canned'] = $this->isSignedIn() && $this->isStaff()
+                ? self::cannedScopesOf( $this->user->hasAccessTo( 'ticketsystem', 'canned' ) )
+                : array( 'personal' => false, 'shared' => false );
+        return $this->cache['canned'];
+    }
+
     /** Whether a scope reaches a ticket (pure). */
     public static function reaches( $scope, array $ticket, $userId, array $accountKeys )
     {

@@ -43,6 +43,7 @@ $fieldErrors = array();
 $draft = '';
 $noteDraft = '';
 $cannedChosen = 0;
+$statusChosen = '';
 $done = function ( array $r, $anchor = '' ) use ( $Module, $back ) {
     if ( $r['ok'] )
         ticketsystemView::flash( array( $r['message'] ) );
@@ -63,6 +64,8 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST
         {
             $draft = trim( $draft . ( trim( $draft ) !== '' ? "\n\n" : '' ) . $service->cannedText( $c, $ticket ) );
             $cannedChosen = (int)$c->attribute( 'id' );
+            // a macro's status is chosen in the form, so the reply sets it (the reader can still change it)
+            $statusChosen = (string)$c->attribute( 'set_status' );
         }
     }
     else if ( $http->hasPostVariable( 'TicketReply' ) )
@@ -129,10 +132,9 @@ if ( $isStaff )
     foreach ( $set->staffChoices as $s )
         $staffChoices[] = array( 'id' => $s, 'label' => $set->label( $s ) );
 $attachments = ticketsystemFiles::byPost( $service->attachments( $ticket ) );
-$canned = array();
-foreach ( $service->cannedReplies( (string)$ticket->attribute( 'category' ) ) as $c )
-    $canned[] = array( 'id' => (int)$c->attribute( 'id' ), 'title' => (string)$c->attribute( 'title' ), 'shared' => !(int)$c->attribute( 'owner_id' ),
-                       'macro' => (string)$c->attribute( 'set_status' ) !== '' || (string)$c->attribute( 'set_priority' ) !== '' || (int)$c->attribute( 'assign_self' ) );
+// staff: the canned replies of the ticket's queue, each with its text filled in (the script inserts it at the cursor;
+// without the script the "Insert the text" button does it on the server)
+$canned = $isStaff ? $service->cannedChoices( $ticket ) : array();
 $opener = eZContentObject::fetch( (int)$ticket->attribute( 'opener_id' ) );
 
 $Result = ticketsystemView::render( $user, 'tickets', 'view', array(
@@ -148,7 +150,7 @@ $Result = ticketsystemView::render( $user, 'tickets', 'view', array(
                        'rated' => (int)$ticket->attribute( 'rated' ), 'enabled' => $settings->enabled( 'CSATSettings', 'Enabled' ) ),
     'is_staff' => $isStaff,
     'staff_choices' => $staffChoices,
-    'staff_default' => $set->role( 'StaffReply' ),
+    'staff_default' => $statusChosen !== '' && in_array( $statusChosen, $set->staffChoices, true ) ? $statusChosen : $set->role( 'StaffReply' ),
     // staff only: the internal notes, the history, the people, the queues, the canned replies, the SLA
     'notes' => $service->notes( $ticket ),
     'history' => $service->history( $ticket ),

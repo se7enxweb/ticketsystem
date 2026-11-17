@@ -40,12 +40,12 @@ $ViewList['search'] = array(
     'script' => 'search.php',
     'default_navigation_part' => 'ezticketsystemnavigationpart',
     'params' => array(),
-    'unordered_params' => array( 'q' => 'q', 'offset' => 'offset' ) );
+    'unordered_params' => array( 'q' => 'q', 'number' => 'number', 'status' => 'status', 'priority' => 'priority', 'queue' => 'queue', 'assignee' => 'assignee', 'customer' => 'customer', 'account' => 'account', 'from' => 'from', 'to' => 'to', 'offset' => 'offset' ) );
 $ViewList['reports'] = array(
     'script' => 'reports.php',
     'default_navigation_part' => 'ezticketsystemnavigationpart',
     'params' => array(),
-    'unordered_params' => array( 'days' => 'days', 'format' => 'format' ) );
+    'unordered_params' => array( 'from' => 'from', 'to' => 'to', 'queue' => 'queue', 'period' => 'period', 'days' => 'days', 'format' => 'format' ) );
 $ViewList['canned'] = array(
     'script' => 'canned.php',
     'default_navigation_part' => 'ezticketsystemnavigationpart',
@@ -76,6 +76,12 @@ $FunctionList['create'] = array();
 $FunctionList['manage'] = array();
 // 1.1: reports, the CSV export and the staff search (within the read scope)
 $FunctionList['report'] = array();
+// 1.1: keep canned replies (create, edit, delete): 1 Personal (one's own), 2 Shared (the team's); using them needs manage
+$FunctionList['canned'] = array( 'CannedScope' => array(
+    'name' => 'CannedScope',
+    'values' => array(
+        array( 'Name' => 'Personal', 'value' => '1' ),
+        array( 'Name' => 'Shared', 'value' => '2' ) ) ) );
 // the functions of ticketsystem 1.x, kept for the roles that use them
 $FunctionList['use'] = array();
 $FunctionList['deligate'] = array();

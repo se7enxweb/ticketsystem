@@ -382,6 +382,7 @@ class ticketsystemInstaller
                 array( 'ticketsystem', 'create', array() ),
                 array( 'ticketsystem', 'manage', array() ),
                 array( 'ticketsystem', 'report', array() ),
+                array( 'ticketsystem', 'canned', array() ),
                 array( 'ticketsystem', 'use', array() ),
                 array( 'user', 'login', $login ? array( 'SiteAccess' => $login ) : array() ),
                 array( 'user', 'selfedit', array() ),
