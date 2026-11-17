@@ -308,22 +308,58 @@ class ticketsystemInstaller
             eZContentClass::expireCache();
     }
 
-    /** Reports whether the options of ticket/state carry every label of the status set in use. */
+    /**
+     * Completes the options of the selections state, category and priority of the class ticket with the labels of
+     * the settings they lack (a class made with other settings, or by ticketsystem 1.x): new options are appended
+     * with new ids, existing ones keep theirs, so the objects keep their values. Then the attributes of a ticket can
+     * follow every status, queue and priority the index gets.
+     */
     protected function checkStateOptions( eZContentClass $class )
     {
-        $attr = $class->fetchAttributeByIdentifier( 'state' );
-        if ( !$attr || $attr->attribute( 'data_type_string' ) !== 'ezselection' )
-            return;
-        $content = $attr->content();
-        $names = array();
-        foreach ( isset( $content['options'] ) ? $content['options'] : array() as $o )
-            $names[] = (string)$o['name'];
-        $missing = array_diff( $this->settings->statusSet()->optionLabels(), $names );
-        if ( $missing )
-            $this->lines[] = 'NOTE  class ticket: the options of "state" lack ' . implode( ', ', $missing )
-                           . ' (status set ' . $this->settings->statusSet()->name . '); the index keeps the status, the attribute is left as it is';
-        else
-            $this->line( 'class ticket: "state" has every status of the set ' . $this->settings->statusSet()->name );
+        $want = array( 'state' => $this->settings->statusSet()->optionLabels(), 'category' => array_values( $this->settings->categories() ),
+                       'priority' => array_values( $this->settings->priorities() ) );
+        foreach ( $want as $identifier => $labels )
+        {
+            $attr = $class->fetchAttributeByIdentifier( $identifier );
+            if ( !$attr || $attr->attribute( 'data_type_string' ) !== 'ezselection' )
+                continue;
+            $content = $attr->content();
+            $options = array();
+            foreach ( isset( $content['options'] ) ? $content['options'] : array() as $o )
+                $options[(int)$o['id']] = (string)$o['name'];
+            $missing = array_values( array_diff( array_map( 'strval', $labels ), $options ) );
+            if ( !$missing )
+            {
+                $this->line( "class ticket: \"$identifier\" has every option of the settings" );
+                continue;
+            }
+            $this->line( "class ticket: add the options " . implode( ', ', $missing ) . " to \"$identifier\"", true );
+            if ( $this->dryRun )
+                continue;
+            $next = $options ? max( array_keys( $options ) ) + 1 : 0;
+            foreach ( $missing as $label )
+                $options[$next++] = $label;
+            $attr->setAttribute( 'data_text5', self::selectionXmlWithIds( $options ) );
+            $attr->store();
+        }
+    }
+
+    /** The ezselection class XML of id => label options. */
+    public static function selectionXmlWithIds( array $options )
+    {
+        $doc = new DOMDocument( '1.0', 'utf-8' );
+        $root = $doc->createElement( 'ezselection' );
+        $doc->appendChild( $root );
+        $list = $doc->createElement( 'options' );
+        $root->appendChild( $list );
+        foreach ( $options as $id => $name )
+        {
+            $node = $doc->createElement( 'option' );
+            $node->setAttribute( 'id', (string)(int)$id );
+            $node->setAttribute( 'name', (string)$name );
+            $list->appendChild( $node );
+        }
+        return $doc->saveXML();
     }
 
     // ---------------------------------------------------------------------------------------------- roles
