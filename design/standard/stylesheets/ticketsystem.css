@@ -215,3 +215,7 @@
 .ts-app .ts-note { border-inline-start: 3px solid var(--ts-warn); padding-inline-start: var(--ts-space-3); }
 .ts-app .ts-stars { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--ts-space-3); }
 .ts-app .ts-stars legend { font-weight: 600; margin-bottom: var(--ts-space-1); }
+
+/* 1.1: reports, search and canned replies (meters are native <meter> elements; a delete button in a table row) */
+.ts-app .ts-inline-form, .ktl-app .ts-inline-form { display: inline; margin: 0; }
+.ts-app meter, .ktl-app .ts-card meter { inline-size: 8rem; max-inline-size: 40vw; vertical-align: middle; }
