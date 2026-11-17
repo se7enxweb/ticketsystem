@@ -14,17 +14,17 @@
         <div class="a4-card-actions"><a class="a4-btn a4-btn-small a4-btn-ghost" href={'ticketsystem/list'|ezurl}>{'All tickets'|i18n( $tsI )}</a></div></div>
     <div class="a4-card-body">
     <dl class="a4-facts is-rows" id="ts-facts">
-        <dt>{'Status'|i18n( $tsI )}</dt><dd id="ts-status">{include uri='design:ticketsystem/parts/status.tpl' label=$ticket.status_label tone=$ticket.status_tone}</dd>
-        <dt>{'Priority'|i18n( $tsI )}</dt><dd id="ts-priority-value">{if $ticket.priority_high}<span class="a4-badge is-bad">{$ticket.priority_label|i18n( $tsI )|wash}</span>{else}{$ticket.priority_label|i18n( $tsI )|wash}{/if}</dd>
-        <dt>{'Queue'|i18n( $tsI )}</dt><dd id="ts-queue-value">{$ticket.category_label|i18n( $tsI )|wash}</dd>
+        <div><dt>{'Status'|i18n( $tsI )}</dt><dd id="ts-status">{include uri='design:ticketsystem/parts/status.tpl' label=$ticket.status_label tone=$ticket.status_tone}</dd></div>
+        <div><dt>{'Priority'|i18n( $tsI )}</dt><dd id="ts-priority-value">{if $ticket.priority_high}<span class="a4-badge is-bad">{$ticket.priority_label|i18n( $tsI )|wash}</span>{else}{$ticket.priority_label|i18n( $tsI )|wash}{/if}</dd></div>
+        <div><dt>{'Queue'|i18n( $tsI )}</dt><dd id="ts-queue-value">{$ticket.category_label|i18n( $tsI )|wash}</dd></div>
         {if $is_staff}
-        <dt>{'Assigned to'|i18n( $tsI )}</dt><dd id="ts-assignee">{if $ticket.assignee_id}{$ticket.assignee|wash}{else}<span class="a4-muted">{'nobody'|i18n( $tsI )}</span>{/if}</dd>
-        <dt>{'Account'|i18n( $tsI )}</dt><dd>{$ticket.account_label|wash}</dd>
-        <dt>{'Opened by'|i18n( $tsI )}</dt><dd>{$opener|wash}</dd>
+        <div><dt>{'Assigned to'|i18n( $tsI )}</dt><dd id="ts-assignee">{if $ticket.assignee_id}{$ticket.assignee|wash}{else}<span class="a4-muted">{'nobody'|i18n( $tsI )}</span>{/if}</dd></div>
+        <div><dt>{'Account'|i18n( $tsI )}</dt><dd>{$ticket.account_label|wash}</dd></div>
+        <div><dt>{'Opened by'|i18n( $tsI )}</dt><dd>{$opener|wash}</dd></div>
         {/if}
-        <dt>{'Opened'|i18n( $tsI )}</dt><dd>{$ticket.created|l10n( 'shortdatetime' )}{if $ticket.source|ne( 'web' )} <span class="a4-badge">{$ticket.source|wash}</span>{/if}</dd>
-        <dt>{'Last post'|i18n( $tsI )}</dt><dd>{$ticket.last_post|l10n( 'shortdatetime' )} <span class="a4-meta">{if $ticket.last_post_staff}{'staff'|i18n( $tsI )}{else}{'customer'|i18n( $tsI )}, {'waiting'|i18n( $tsI )} {$ticket.waiting|wash}{/if}</span></dd>
-        <dt>{'E-mail copies'|i18n( $tsI )}</dt><dd>{if $following}{'You get every post by e-mail.'|i18n( $tsI )}{else}{'You do not follow this ticket.'|i18n( $tsI )}{/if}</dd>
+        <div><dt>{'Opened'|i18n( $tsI )}</dt><dd>{$ticket.created|l10n( 'shortdatetime' )}{if $ticket.source|ne( 'web' )} <span class="a4-badge">{$ticket.source|wash}</span>{/if}</dd></div>
+        <div><dt>{'Last post'|i18n( $tsI )}</dt><dd>{$ticket.last_post|l10n( 'shortdatetime' )} <span class="a4-meta">{if $ticket.last_post_staff}{'staff'|i18n( $tsI )}{else}{'customer'|i18n( $tsI )}, {'waiting'|i18n( $tsI )} {$ticket.waiting|wash}{/if}</span></dd></div>
+        <div><dt>{'E-mail copies'|i18n( $tsI )}</dt><dd>{if $following}{'You get every post by e-mail.'|i18n( $tsI )}{else}{'You do not follow this ticket.'|i18n( $tsI )}{/if}</dd></div>
     </dl>
     </div>
     {if or( $may_resolve, $may_reopen, $is_staff )}
@@ -87,12 +87,12 @@
     <div class="a4-card-body">
     {if $sla}
     <dl class="a4-facts is-rows">
-        <dt>{'First response'|i18n( $tsI )}</dt>
-        <dd>{include uri='design:ticketsystem/parts/sla_state.tpl' target=$sla.response}</dd>
-        <dt>{'Resolution'|i18n( $tsI )}</dt>
-        <dd>{include uri='design:ticketsystem/parts/sla_state.tpl' target=$sla.resolution}</dd>
-        <dt>{'Escalation'|i18n( $tsI )}</dt>
-        <dd>{if $ticket.escalation|ge( 2 )}<span class="a4-badge is-bad">{'level 2: breached'|i18n( $tsI )}</span>{elseif $ticket.escalation|ge( 1 )}<span class="a4-badge is-warn">{'level 1'|i18n( $tsI )}</span>{else}{'none'|i18n( $tsI )}{/if}</dd>
+        <div><dt>{'First response'|i18n( $tsI )}</dt>
+        <dd>{include uri='design:ticketsystem/parts/sla_state.tpl' target=$sla.response}</dd></div>
+        <div><dt>{'Resolution'|i18n( $tsI )}</dt>
+        <dd>{include uri='design:ticketsystem/parts/sla_state.tpl' target=$sla.resolution}</dd></div>
+        <div><dt>{'Escalation'|i18n( $tsI )}</dt>
+        <dd>{if $ticket.escalation|ge( 2 )}<span class="a4-badge is-bad">{'level 2: breached'|i18n( $tsI )}</span>{elseif $ticket.escalation|ge( 1 )}<span class="a4-badge is-warn">{'level 1'|i18n( $tsI )}</span>{else}{'none'|i18n( $tsI )}{/if}</dd></div>
     </dl>
     {else}
     <p class="a4-empty">{'This ticket has no SLA target.'|i18n( $tsI )}</p>

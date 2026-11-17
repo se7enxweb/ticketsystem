@@ -190,6 +190,29 @@ class ticketsystemDesk
         return $statuses ? 'status IN (' . implode( ', ', array_map( $quote, array_map( 'strval', $statuses ) ) ) . ')' : '';
     }
 
+    /**
+     * The name of a filter as the left menu of the tab TicketSystem names it (pure; the breadcrumb "TicketSystem >
+     * <name>"): exactly one of the menu's lists, else "Tickets".
+     */
+    public static function listName( array $filter )
+    {
+        $lists = array(
+            'Not resolved' => array(), 'Needs a staff reply' => array( 'reply' => 'staff' ),
+            'Assigned to me' => array( 'assignee' => 'me' ), 'Unassigned' => array( 'assignee' => 'none' ),
+            'Urgent' => array( 'priority' => 'urgent' ), 'Escalated' => array( 'sla' => 'escalated' ),
+            'Resolved or closed' => array( 'status' => 'done' ), 'All tickets' => array( 'status' => 'all' ),
+        );
+        $filter = array_map( 'strval', $filter );
+        ksort( $filter );
+        foreach ( $lists as $name => $f )
+        {
+            ksort( $f );
+            if ( $f === $filter )
+                return $name;
+        }
+        return 'Tickets';
+    }
+
     /** The badge class of a tone (ok, warn, bad, info, muted). */
     public static function badgeClass( $tone )
     {

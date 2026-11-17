@@ -43,7 +43,7 @@
         <th scope="col">{'Shared'|i18n( $tsI )}</th><th scope="col" class="a4-num">{'Used'|i18n( $tsI )}</th><th scope="col"><span class="a4-sr-only">{'Actions'|i18n( $tsI )}</span></th></tr></thead>
     <tbody>
     {foreach $canned as $c}
-    <tr><th scope="row"><a href={concat( 'ticketsystem/canned/(edit)/', $c.id )|ezurl}>{$c.title|wash}</a></th>
+    <tr><td><a href={concat( 'ticketsystem/canned/(edit)/', $c.id )|ezurl}>{$c.title|wash}</a></td>
         <td>{if $c.category}{$c.category|i18n( $tsI )|wash}{else}<span class="a4-muted">{'every queue'|i18n( $tsI )}</span>{/if}</td>
         <td>{if $c.status}<span class="a4-badge">{$c.status|i18n( $tsI )|wash}</span> {/if}{if $c.priority}<span class="a4-badge">{$c.priority|i18n( $tsI )|wash}</span> {/if}{if $c.assign_self}<span class="a4-badge">{'assign to me'|i18n( $tsI )}</span>{/if}</td>
         <td>{if $c.shared}{'yes'|i18n( $tsI )}{else}{'only you'|i18n( $tsI )}{/if}</td>

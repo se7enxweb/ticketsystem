@@ -6,7 +6,7 @@
     <table class="a4-table is-compact">
         <tbody>
         {foreach $rows as $tsR}
-        <tr><th scope="row">{$tsR.label|i18n( 'extension/ticketsystem' )|wash}</th>
+        <tr><td>{$tsR.label|i18n( 'extension/ticketsystem' )|wash}</td>
             <td><span class="a4-meter" role="img" aria-label="{$tsR.count}"><span class="a4-pct-{$tsR.pct}"></span></span></td>
             <td class="a4-num">{$tsR.count}</td></tr>
         {/foreach}

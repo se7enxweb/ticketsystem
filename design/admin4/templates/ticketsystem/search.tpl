@@ -20,7 +20,7 @@
     {foreach $tickets as $t}
     <tr data-ts-number="{$t.number|wash}">
         <td class="a4-nowrap"><a href={concat( 'ticketsystem/view/', $t.number )|ezurl}>{$t.number|wash}</a></td>
-        <th scope="row"><a href={concat( 'ticketsystem/view/', $t.number )|ezurl}>{$t.subject|wash}</a>{if $t.in_note} <span class="a4-badge is-warn">{'in an internal note'|i18n( $tsI )}</span>{/if}</th>
+        <td><a href={concat( 'ticketsystem/view/', $t.number )|ezurl}>{$t.subject|wash}</a>{if $t.in_note} <span class="a4-badge is-warn">{'in an internal note'|i18n( $tsI )}</span>{/if}</td>
         <td>{$t.account_label|wash}</td>
         <td>{include uri='design:ticketsystem/parts/status.tpl' label=$t.status_label tone=$t.status_tone}</td>
         <td>{if $t.assignee_id}{$t.assignee|wash}{else}<span class="a4-muted">{'nobody'|i18n( $tsI )}</span>{/if}</td>

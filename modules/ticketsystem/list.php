@@ -84,7 +84,7 @@ if ( $access->isStaff() )
         'pager_next' => $p['offset'] + $limit < $page['total'] ? ticketsystemDesk::url( 'ticketsystem/list', $p['filter'], $p['sort'], $p['order'], $p['offset'] + $limit, $spec ) : '',
         'counts' => array( 'open' => $figures['active'], 'done' => $figures['done'], 'all' => $figures['all'] ),
         'may_create' => $access->may( 'create' ), 'is_staff' => true, 'scope' => $access->scope( 'read' ),
-    ), ticketsystemView::path() );
+    ), ticketsystemView::path( ezpI18n::tr( 'extension/ticketsystem', ticketsystemDesk::listName( $p['filter'] ) ) ) );
     return;
 }
 

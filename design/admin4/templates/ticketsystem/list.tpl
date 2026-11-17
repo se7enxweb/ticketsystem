@@ -80,9 +80,9 @@
     {foreach $tickets as $t}
     <tr data-ts-number="{$t.number|wash}">
         <td class="a4-nowrap"><a href={concat( 'ticketsystem/view/', $t.number )|ezurl}>{$t.number|wash}</a></td>
-        <th scope="row"><a href={concat( 'ticketsystem/view/', $t.number )|ezurl}>{$t.subject|wash}</a>
+        <td><a href={concat( 'ticketsystem/view/', $t.number )|ezurl}>{$t.subject|wash}</a>
             {if $t.attachment_count} <span class="a4-badge" title="{'Attachments'|i18n( $tsI )|wash}">{$t.attachment_count} {'files'|i18n( $tsI )}</span>{/if}
-            {if $t.note_count} <span class="a4-badge is-accent" title="{'Internal notes'|i18n( $tsI )|wash}">{$t.note_count} {'notes'|i18n( $tsI )}</span>{/if}</th>
+            {if $t.note_count} <span class="a4-badge is-accent" title="{'Internal notes'|i18n( $tsI )|wash}">{$t.note_count} {'notes'|i18n( $tsI )}</span>{/if}</td>
         <td>{$t.account_label|wash}</td>
         <td>{include uri='design:ticketsystem/parts/status.tpl' label=$t.status_label tone=$t.status_tone}</td>
         <td>{if $t.priority_high}<span class="a4-badge is-bad">{$t.priority_label|i18n( $tsI )|wash}</span>{else}{$t.priority_label|i18n( $tsI )|wash}{/if}</td>
@@ -122,7 +122,7 @@
     {foreach $tickets as $t}
     <tr data-ts-number="{$t.number|wash}">
         <td class="a4-nowrap"><a href={concat( 'ticketsystem/view/', $t.number )|ezurl}>{$t.number|wash}</a></td>
-        <th scope="row"><a href={concat( 'ticketsystem/view/', $t.number )|ezurl}>{$t.subject|wash}</a>{if and( $t.last_post_staff, $t.done|not )} <span class="a4-badge is-accent">{'New reply'|i18n( $tsI )}</span>{/if}</th>
+        <td><a href={concat( 'ticketsystem/view/', $t.number )|ezurl}>{$t.subject|wash}</a>{if and( $t.last_post_staff, $t.done|not )} <span class="a4-badge is-accent">{'New reply'|i18n( $tsI )}</span>{/if}</td>
         <td>{include uri='design:ticketsystem/parts/status.tpl' label=$t.status_label tone=$t.status_tone}</td>
         <td>{$t.category_label|i18n( $tsI )|wash}</td>
         <td class="a4-num">{$t.post_count}</td>

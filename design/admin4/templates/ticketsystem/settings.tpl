@@ -16,15 +16,15 @@
         <p class="a4-meta">{if $sla.enabled}{'On.'|i18n( $tsI )}{else}{'Off.'|i18n( $tsI )}{/if} {'Escalation at %pct % of a target; paused while: %paused.'|i18n( $tsI,, hash( '%pct', $sla.warn, '%paused', $sla.paused|implode( ', ' ) ) )|wash}</p></div>
     <div class="a4-card-body a4-stack">
     <dl class="a4-facts is-rows">
-        <dt>{'Escalated now'|i18n( $tsI )}</dt><dd><a href={'ticketsystem/list/(sla)/escalated'|ezurl}>{$sla.escalated}</a></dd>
-        <dt>{'Katalyst SLA entitlements'|i18n( $tsI )}</dt><dd>{if $sla.katalyst}{'used'|i18n( $tsI )}{else}{'not used'|i18n( $tsI )}{/if}</dd>
-        <dt>{'Escalation raises the priority'|i18n( $tsI )}</dt><dd>{if $sla.raise}{'yes'|i18n( $tsI )}{else}{'no'|i18n( $tsI )}{/if}</dd>
+        <div><dt>{'Escalated now'|i18n( $tsI )}</dt><dd><a href={'ticketsystem/list/(sla)/escalated'|ezurl}>{$sla.escalated}</a></dd></div>
+        <div><dt>{'Katalyst SLA entitlements'|i18n( $tsI )}</dt><dd>{if $sla.katalyst}{'used'|i18n( $tsI )}{else}{'not used'|i18n( $tsI )}{/if}</dd></div>
+        <div><dt>{'Escalation raises the priority'|i18n( $tsI )}</dt><dd>{if $sla.raise}{'yes'|i18n( $tsI )}{else}{'no'|i18n( $tsI )}{/if}</dd></div>
     </dl>
     {foreach $sla.levels as $tsLvl}
     <div class="a4-table-wrap"><table class="a4-table is-compact">
         <caption>{$tsLvl.label|wash}{if $tsLvl.default} ({'default'|i18n( $tsI )}){/if}</caption>
         <thead><tr><th scope="col">{'Priority'|i18n( $tsI )}</th><th scope="col" class="a4-num">{'First response (min)'|i18n( $tsI )}</th><th scope="col" class="a4-num">{'Resolution (min)'|i18n( $tsI )}</th></tr></thead>
-        <tbody>{foreach $tsLvl.targets as $tsT}<tr><th scope="row">{$tsT.priority|i18n( $tsI )|wash}</th><td class="a4-num">{$tsT.first}</td><td class="a4-num">{$tsT.resolution}</td></tr>{/foreach}</tbody>
+        <tbody>{foreach $tsLvl.targets as $tsT}<tr><td>{$tsT.priority|i18n( $tsI )|wash}</td><td class="a4-num">{$tsT.first}</td><td class="a4-num">{$tsT.resolution}</td></tr>{/foreach}</tbody>
     </table></div>
     {/foreach}
     </div>
@@ -35,29 +35,29 @@
 <section class="a4-card" aria-labelledby="ts-s-mail-h" id="ts-settings-mail">
     <div class="a4-card-head"><h2 class="a4-card-title a4-h3" id="ts-s-mail-h">{'Reply by e-mail'|i18n( $tsI )}</h2></div>
     <div class="a4-card-body"><dl class="a4-facts is-rows">
-        <dt>{'Status'|i18n( $tsI )}</dt><dd>{if $mail.enabled}<span class="a4-badge is-ok">{'on'|i18n( $tsI )}</span>{else}<span class="a4-badge">{'off'|i18n( $tsI )}</span>{/if}</dd>
-        <dt>{'Sender'|i18n( $tsI )}</dt><dd>{$mail.sender|wash}</dd>
-        <dt>{'Reply address'|i18n( $tsI )}</dt><dd>{if $mail.reply_address}{$mail.reply_address|wash}{else}<span class="a4-muted">{'none: the reference is in the text of the mails'|i18n( $tsI )}</span>{/if}</dd>
-        <dt>{'Signed reference required'|i18n( $tsI )}</dt><dd>{if $mail.require_token}{'yes'|i18n( $tsI )}{else}{'no: the number in the subject is enough'|i18n( $tsI )}{/if}</dd>
-        <dt>{'Mail without a ticket opens one'|i18n( $tsI )}</dt><dd>{if $mail.open_new}{'yes'|i18n( $tsI )}{else}{'no'|i18n( $tsI )}{/if}</dd>
-        <dt>{'Own secret set'|i18n( $tsI )}</dt><dd>{if $mail.secret_set}{'yes'|i18n( $tsI )}{else}<span class="a4-badge is-warn">{'no: one derived from the installation'|i18n( $tsI )}</span>{/if}</dd>
+        <div><dt>{'Status'|i18n( $tsI )}</dt><dd>{if $mail.enabled}<span class="a4-badge is-ok">{'on'|i18n( $tsI )}</span>{else}<span class="a4-badge">{'off'|i18n( $tsI )}</span>{/if}</dd></div>
+        <div><dt>{'Sender'|i18n( $tsI )}</dt><dd>{$mail.sender|wash}</dd></div>
+        <div><dt>{'Reply address'|i18n( $tsI )}</dt><dd>{if $mail.reply_address}{$mail.reply_address|wash}{else}<span class="a4-muted">{'none: the reference is in the text of the mails'|i18n( $tsI )}</span>{/if}</dd></div>
+        <div><dt>{'Signed reference required'|i18n( $tsI )}</dt><dd>{if $mail.require_token}{'yes'|i18n( $tsI )}{else}{'no: the number in the subject is enough'|i18n( $tsI )}{/if}</dd></div>
+        <div><dt>{'Mail without a ticket opens one'|i18n( $tsI )}</dt><dd>{if $mail.open_new}{'yes'|i18n( $tsI )}{else}{'no'|i18n( $tsI )}{/if}</dd></div>
+        <div><dt>{'Own secret set'|i18n( $tsI )}</dt><dd>{if $mail.secret_set}{'yes'|i18n( $tsI )}{else}<span class="a4-badge is-warn">{'no: one derived from the installation'|i18n( $tsI )}</span>{/if}</dd></div>
     </dl></div>
 </section>
 <section class="a4-card" aria-labelledby="ts-s-files-h" id="ts-settings-files">
     <div class="a4-card-head"><h2 class="a4-card-title a4-h3" id="ts-s-files-h">{'Attachments'|i18n( $tsI )}</h2></div>
     <div class="a4-card-body"><dl class="a4-facts is-rows">
-        <dt>{'Status'|i18n( $tsI )}</dt><dd>{if $attach.enabled}<span class="a4-badge is-ok">{'on'|i18n( $tsI )}</span>{else}<span class="a4-badge">{'off'|i18n( $tsI )}</span>{/if}</dd>
-        <dt>{'Limits'|i18n( $tsI )}</dt><dd>{'%count files of at most %size MB'|i18n( $tsI,, hash( '%count', $attach.max_files, '%size', $attach.max_mb ) )|wash}</dd>
-        <dt>{'Types'|i18n( $tsI )}</dt><dd>{$attach.types|wash}</dd>
-        <dt>{'Virus scan'|i18n( $tsI )}</dt><dd>{if $attach.scan}{'on'|i18n( $tsI )}{else}<span class="a4-badge is-warn">{'no scanner set'|i18n( $tsI )}</span>{/if}</dd>
-        <dt>{'Storage'|i18n( $tsI )}</dt><dd>{if $attach.outside}{'outside the installation'|i18n( $tsI )}{else}<span class="a4-badge is-warn">{'inside the installation (not served directly)'|i18n( $tsI )}</span>{/if}</dd>
+        <div><dt>{'Status'|i18n( $tsI )}</dt><dd>{if $attach.enabled}<span class="a4-badge is-ok">{'on'|i18n( $tsI )}</span>{else}<span class="a4-badge">{'off'|i18n( $tsI )}</span>{/if}</dd></div>
+        <div><dt>{'Limits'|i18n( $tsI )}</dt><dd>{'%count files of at most %size MB'|i18n( $tsI,, hash( '%count', $attach.max_files, '%size', $attach.max_mb ) )|wash}</dd></div>
+        <div><dt>{'Types'|i18n( $tsI )}</dt><dd>{$attach.types|wash}</dd></div>
+        <div><dt>{'Virus scan'|i18n( $tsI )}</dt><dd>{if $attach.scan}{'on'|i18n( $tsI )}{else}<span class="a4-badge is-warn">{'no scanner set'|i18n( $tsI )}</span>{/if}</dd></div>
+        <div><dt>{'Storage'|i18n( $tsI )}</dt><dd>{if $attach.outside}{'outside the installation'|i18n( $tsI )}{else}<span class="a4-badge is-warn">{'inside the installation (not served directly)'|i18n( $tsI )}</span>{/if}</dd></div>
     </dl></div>
 </section>
 <section class="a4-card" aria-labelledby="ts-s-csat-h">
     <div class="a4-card-head"><h2 class="a4-card-title a4-h3" id="ts-s-csat-h">{'Satisfaction ratings'|i18n( $tsI )}</h2></div>
     <div class="a4-card-body"><dl class="a4-facts is-rows">
-        <dt>{'Status'|i18n( $tsI )}</dt><dd>{if $csat.enabled}{'on'|i18n( $tsI )}{else}{'off'|i18n( $tsI )}{/if}</dd>
-        <dt>{'Asked in the mail of a solving reply'|i18n( $tsI )}</dt><dd>{if $csat.ask}{'yes'|i18n( $tsI )}{else}{'no'|i18n( $tsI )}{/if}</dd>
+        <div><dt>{'Status'|i18n( $tsI )}</dt><dd>{if $csat.enabled}{'on'|i18n( $tsI )}{else}{'off'|i18n( $tsI )}{/if}</dd></div>
+        <div><dt>{'Asked in the mail of a solving reply'|i18n( $tsI )}</dt><dd>{if $csat.ask}{'yes'|i18n( $tsI )}{else}{'no'|i18n( $tsI )}{/if}</dd></div>
     </dl></div>
 </section>
 </div>
@@ -84,7 +84,7 @@ php extension/ticketsystem/bin/php/import_whmcs.php -s &lt;admin siteaccess&gt; 
     <div class="a4-table-wrap"><table class="a4-table">
         <thead><tr><th scope="col">{'Queue'|i18n( $tsI )}</th><th scope="col" class="a4-num">{'Not resolved'|i18n( $tsI )}</th><th scope="col" class="a4-num">{'Unassigned'|i18n( $tsI )}</th><th scope="col">{'Round-robin'|i18n( $tsI )}</th></tr></thead>
         <tbody>
-        {foreach $queues as $tsQ}<tr><th scope="row"><a href={concat( 'ticketsystem/list/(category)/', $tsQ.id )|ezurl}>{$tsQ.label|i18n( $tsI )|wash}</a></th>
+        {foreach $queues as $tsQ}<tr><td><a href={concat( 'ticketsystem/list/(category)/', $tsQ.id )|ezurl}>{$tsQ.label|i18n( $tsI )|wash}</a></td>
             <td class="a4-num">{$tsQ.active}</td><td class="a4-num"><a href={concat( 'ticketsystem/list/(category)/', $tsQ.id, '/(assignee)/none' )|ezurl}>{$tsQ.unassigned}</a></td>
             <td>{if $tsQ.auto}<span class="a4-badge is-ok">{'on'|i18n( $tsI )}</span>{else}<span class="a4-muted">{'off'|i18n( $tsI )}</span>{/if}</td></tr>{/foreach}
         </tbody>

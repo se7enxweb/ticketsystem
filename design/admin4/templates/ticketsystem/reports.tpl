@@ -26,10 +26,10 @@
     <div class="a4-card-head"><h2 class="a4-card-title a4-h3" id="ts-r-times-h">{'Response and resolution'|i18n( $tsI )}</h2></div>
     <div class="a4-card-body">
     <dl class="a4-facts is-rows" id="ts-report-times">
-        <dt>{'First response'|i18n( $tsI )}</dt><dd>{if $tsF.first_response.count}{'%avg min on average, median %median min (%count tickets)'|i18n( $tsI,, hash( '%avg', $tsF.first_response.avg_minutes, '%median', $tsF.first_response.median_minutes, '%count', $tsF.first_response.count ) )|wash}{else}<span class="a4-muted">&ndash;</span>{/if}</dd>
-        <dt>{'Resolution'|i18n( $tsI )}</dt><dd>{if $tsF.resolution.count}{'%avg h on average (%count tickets)'|i18n( $tsI,, hash( '%avg', $tsF.resolution.avg_hours, '%count', $tsF.resolution.count ) )|wash}{else}<span class="a4-muted">&ndash;</span>{/if}</dd>
-        <dt>{'SLA: first response met'|i18n( $tsI )}</dt><dd>{if $response_pct|is_null|not}{$response_pct} % ({$tsF.sla.response_met} / {$tsF.sla.response_total}){else}<span class="a4-muted">&ndash;</span>{/if}</dd>
-        <dt>{'SLA: resolution met'|i18n( $tsI )}</dt><dd>{if $resolution_pct|is_null|not}{$resolution_pct} % ({$tsF.sla.resolution_met} / {$tsF.sla.resolution_total}){else}<span class="a4-muted">&ndash;</span>{/if}</dd>
+        <div><dt>{'First response'|i18n( $tsI )}</dt><dd>{if $tsF.first_response.count}{'%avg min on average, median %median min (%count tickets)'|i18n( $tsI,, hash( '%avg', $tsF.first_response.avg_minutes, '%median', $tsF.first_response.median_minutes, '%count', $tsF.first_response.count ) )|wash}{else}<span class="a4-muted">&ndash;</span>{/if}</dd></div>
+        <div><dt>{'Resolution'|i18n( $tsI )}</dt><dd>{if $tsF.resolution.count}{'%avg h on average (%count tickets)'|i18n( $tsI,, hash( '%avg', $tsF.resolution.avg_hours, '%count', $tsF.resolution.count ) )|wash}{else}<span class="a4-muted">&ndash;</span>{/if}</dd></div>
+        <div><dt>{'SLA: first response met'|i18n( $tsI )}</dt><dd>{if $response_pct|is_null|not}{$response_pct} % ({$tsF.sla.response_met} / {$tsF.sla.response_total}){else}<span class="a4-muted">&ndash;</span>{/if}</dd></div>
+        <div><dt>{'SLA: resolution met'|i18n( $tsI )}</dt><dd>{if $resolution_pct|is_null|not}{$resolution_pct} % ({$tsF.sla.resolution_met} / {$tsF.sla.resolution_total}){else}<span class="a4-muted">&ndash;</span>{/if}</dd></div>
     </dl>
     </div>
 </section>
@@ -38,7 +38,7 @@
         <p class="a4-meta">{if $tsF.csat.count}{'%avg of 5 from %count ratings'|i18n( $tsI,, hash( '%avg', $tsF.csat.avg, '%count', $tsF.csat.count ) )|wash}{else}{'No ratings in this period.'|i18n( $tsI )}{/if}</p></div>
     <div class="a4-card-body">
     <table class="a4-table is-compact"><tbody>
-    {foreach $csat_dist|reverse as $tsR}<tr><th scope="row">{$tsR.label} / 5</th><td><span class="a4-meter is-ok" role="img" aria-label="{$tsR.count}"><span class="a4-pct-{$tsR.pct}"></span></span></td><td class="a4-num">{$tsR.count}</td></tr>{/foreach}
+    {foreach $csat_dist|reverse as $tsR}<tr><td>{$tsR.label} / 5</td><td><span class="a4-meter is-ok" role="img" aria-label="{$tsR.count}"><span class="a4-pct-{$tsR.pct}"></span></span></td><td class="a4-num">{$tsR.count}</td></tr>{/foreach}
     </tbody></table>
     </div>
 </section>
