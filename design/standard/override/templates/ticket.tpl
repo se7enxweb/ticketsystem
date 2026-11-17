@@ -26,7 +26,7 @@
 						<div class="mainobject-window">
     					        {* in window *}
 								<div class="holdinplace">    						
-				<table class="list"  style="width:30%; float:right" >
+				<table class="list ts-legacy-facts">
 														    
 								 <tr>
 								    <th> {$node.object.data_map.category.contentclass_attribute.name}:</th>

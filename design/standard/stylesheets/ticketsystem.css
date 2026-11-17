@@ -1,0 +1,210 @@
+/*
+ * ticketsystem: the help desk's own frame (doc/design.md).
+ * Copyright (C) 2026 7x. GNU General Public License v2.0 (or any later version).
+ *
+ * Two parts:
+ * 1. .ts-app: the extension's own frame, used where the Katalyst customer console is not (any Exponential site, and
+ *    support staff without a customer). Tokens only (--ts-*), each colour with its dark value; mobile first (16 px
+ *    text, 44 px controls, no sideways scroll), wider layouts from 720 px and 960 px.
+ * 2. .ktl-app .ts-*: inside the Katalyst console the views use the console's components (katalyst.css); the few
+ *    rules here are what no component does (a post's head and body, a staff post's marker), on the --ktl-* tokens.
+ * No raw colour outside a token definition.
+ */
+
+/* ---------------------------------------------------------------- 1. the extension's own frame: tokens */
+.ts-app {
+    --ts-ink: #1d2433;
+    --ts-muted: #556070;
+    --ts-line: #dfe3ea;
+    --ts-bg: #f6f7f9;
+    --ts-card: #ffffff;
+    --ts-accent: #2756c5;
+    --ts-accent-text: #1f4aa8;
+    --ts-on-accent: #ffffff;
+    --ts-ok: #1b6e3a;
+    --ts-ok-bg: #e3f4e9;
+    --ts-warn: #8a4b00;
+    --ts-warn-bg: #fdf0dc;
+    --ts-bad: #a3231b;
+    --ts-bad-bg: #fbe5e3;
+    --ts-info: #1f4aa8;
+    --ts-info-bg: #e5edfb;
+    --ts-staff-bg: #eef3fd;
+    --ts-radius: 10px;
+    --ts-radius-s: 6px;
+    --ts-radius-pill: 999px;
+    --ts-space-1: 4px;
+    --ts-space-2: 8px;
+    --ts-space-3: 12px;
+    --ts-space-4: 16px;
+    --ts-space-5: 24px;
+    --ts-gutter: 16px;
+    --ts-text-xs: 13px;
+    --ts-text-s: 14px;
+    --ts-text-m: 16px;
+    --ts-text-l: 19px;
+    --ts-text-xl: 24px;
+    --ts-control: 44px;
+    --ts-content-max: 1120px;
+    --ts-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    .ts-app {
+        --ts-ink: #e7eaf0;
+        --ts-muted: #a8b1bf;
+        --ts-line: #333b49;
+        --ts-bg: #12161d;
+        --ts-card: #1b2029;
+        --ts-accent: #7aa2f7;
+        --ts-accent-text: #9dbbfa;
+        --ts-on-accent: #0c1220;
+        --ts-ok: #7fd6a0;
+        --ts-ok-bg: #173324;
+        --ts-warn: #f5c27a;
+        --ts-warn-bg: #3a2a12;
+        --ts-bad: #f4a19b;
+        --ts-bad-bg: #3d1a18;
+        --ts-info: #9dbbfa;
+        --ts-info-bg: #1b2a47;
+        --ts-staff-bg: #1d2738;
+    }
+}
+
+/* ---------------------------------------------------------------- 1. the frame and the components */
+.ts-app {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    background: var(--ts-bg);
+    color: var(--ts-ink);
+    font-family: var(--ts-font);
+    font-size: var(--ts-text-m);
+    line-height: 1.5;
+    padding: var(--ts-space-4) var(--ts-gutter);
+}
+.ts-app *, .ts-app *::before, .ts-app *::after { box-sizing: inherit; }
+.ts-app .ts-main { max-width: var(--ts-content-max); margin: 0 auto; display: grid; gap: var(--ts-space-4); }
+.ts-app a { color: var(--ts-accent-text); }
+.ts-app .ts-h1 { font-size: var(--ts-text-xl); line-height: 1.25; margin: 0; }
+.ts-app .ts-h2 { font-size: var(--ts-text-l); line-height: 1.3; margin: 0; display: flex; gap: var(--ts-space-2); align-items: center; }
+.ts-app .ts-lede { color: var(--ts-muted); margin: var(--ts-space-1) 0 0; }
+.ts-app .ts-muted { color: var(--ts-muted); }
+.ts-app .ts-small { font-size: var(--ts-text-xs); }
+.ts-app .ts-crumbs { margin: 0; }
+.ts-app .ts-pagehead { display: grid; gap: var(--ts-space-3); }
+
+.ts-app .ts-card {
+    background: var(--ts-card);
+    border: 1px solid var(--ts-line);
+    border-radius: var(--ts-radius);
+    padding: var(--ts-space-4);
+    display: grid;
+    gap: var(--ts-space-3);
+    min-width: 0;
+}
+.ts-app .ts-card-head { display: flex; flex-wrap: wrap; gap: var(--ts-space-2); align-items: baseline; justify-content: space-between; }
+.ts-app .ts-empty { text-align: center; justify-items: center; }
+.ts-app .ts-empty-icon { font-size: var(--ts-text-xl); color: var(--ts-muted); }
+
+.ts-app .ts-notice { border-radius: var(--ts-radius-s); padding: var(--ts-space-3) var(--ts-space-4); border: 1px solid var(--ts-line); }
+.ts-app .ts-notice p { margin: 0; }
+.ts-app .ts-notice.is-ok { background: var(--ts-ok-bg); color: var(--ts-ok); }
+.ts-app .ts-notice.is-bad { background: var(--ts-bad-bg); color: var(--ts-bad); }
+
+.ts-app .ts-pill, .ts-app .ts-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ts-space-1);
+    border-radius: var(--ts-radius-pill);
+    padding: 2px var(--ts-space-2);
+    font-size: var(--ts-text-xs);
+    font-weight: 600;
+    background: var(--ts-bg);
+    color: var(--ts-muted);
+    white-space: nowrap;
+}
+.ts-app .ts-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.ts-app .ts-pill.is-ok { background: var(--ts-ok-bg); color: var(--ts-ok); }
+.ts-app .ts-pill.is-warn { background: var(--ts-warn-bg); color: var(--ts-warn); }
+.ts-app .ts-pill.is-bad { background: var(--ts-bad-bg); color: var(--ts-bad); }
+.ts-app .ts-pill.is-info, .ts-app .ts-badge { background: var(--ts-info-bg); color: var(--ts-info); }
+
+.ts-app .ts-tabs { display: flex; gap: var(--ts-space-2); overflow-x: auto; }
+.ts-app .ts-tab {
+    display: inline-flex; align-items: center; gap: var(--ts-space-2); min-height: var(--ts-control);
+    padding: 0 var(--ts-space-3); border-radius: var(--ts-radius-s); color: var(--ts-ink); text-decoration: none; white-space: nowrap;
+}
+.ts-app .ts-tab.is-current { background: var(--ts-card); border: 1px solid var(--ts-line); font-weight: 600; }
+
+.ts-app .ts-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--ts-space-2);
+    min-height: var(--ts-control); padding: 0 var(--ts-space-4); border-radius: var(--ts-radius-s);
+    border: 1px solid var(--ts-line); background: var(--ts-card); color: var(--ts-ink);
+    font: inherit; font-weight: 600; text-decoration: none; cursor: pointer;
+}
+.ts-app .ts-btn.is-primary { background: var(--ts-accent); border-color: var(--ts-accent); color: var(--ts-on-accent); }
+.ts-app .ts-btn.is-ghost { background: transparent; }
+.ts-app .ts-btn:focus-visible, .ts-app .ts-input:focus-visible, .ts-app .ts-tab:focus-visible { outline: 3px solid var(--ts-accent); outline-offset: 2px; }
+.ts-app .ts-actions { display: flex; flex-wrap: wrap; gap: var(--ts-space-2); margin: 0; }
+
+.ts-app .ts-form { display: grid; gap: var(--ts-space-4); }
+.ts-app .ts-field { display: grid; gap: var(--ts-space-1); }
+.ts-app .ts-field label { font-weight: 600; }
+.ts-app .ts-fields-2 { display: grid; gap: var(--ts-space-4); }
+.ts-app .ts-input {
+    width: 100%; min-height: var(--ts-control); padding: var(--ts-space-2) var(--ts-space-3);
+    border: 1px solid var(--ts-line); border-radius: var(--ts-radius-s); background: var(--ts-card); color: var(--ts-ink);
+    font: inherit; font-size: var(--ts-text-m);
+}
+.ts-app .ts-textarea { min-height: 160px; resize: vertical; }
+.ts-app .ts-input.is-invalid { border-color: var(--ts-bad); }
+.ts-app .ts-field-error { color: var(--ts-bad); margin: 0; font-size: var(--ts-text-s); }
+
+/* the list: stacked blocks on phones, a table from 720 px */
+.ts-app .ts-table { width: 100%; border-collapse: collapse; }
+.ts-app .ts-table thead { display: none; }
+.ts-app .ts-table tr { display: grid; gap: var(--ts-space-1); padding: var(--ts-space-3) 0; border-top: 1px solid var(--ts-line); }
+.ts-app .ts-table td { display: block; }
+.ts-app .ts-pager { display: flex; justify-content: space-between; gap: var(--ts-space-2); }
+
+/* the conversation */
+.ts-app .ts-posts { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--ts-space-3); }
+.ts-app .ts-post { border: 1px solid var(--ts-line); border-radius: var(--ts-radius-s); padding: var(--ts-space-3); }
+.ts-app .ts-post.is-staff { background: var(--ts-staff-bg); border-inline-start: 4px solid var(--ts-accent); }
+.ts-app .ts-post-head { margin: 0 0 var(--ts-space-2); }
+.ts-app .ts-post-body p { margin: 0 0 var(--ts-space-2); }
+.ts-app .ts-facts { display: grid; gap: var(--ts-space-1) var(--ts-space-3); margin: 0; }
+.ts-app .ts-facts dt { color: var(--ts-muted); font-size: var(--ts-text-s); }
+.ts-app .ts-facts dd { margin: 0 0 var(--ts-space-2); }
+.ts-app .ts-grid, .ts-app .ts-thread, .ts-app .ts-side { display: grid; gap: var(--ts-space-4); min-width: 0; }
+
+@media (min-width: 720px) {
+    .ts-app .ts-pagehead { grid-template-columns: 1fr auto; align-items: start; }
+    .ts-app .ts-fields-2 { grid-template-columns: 1fr 1fr; }
+    .ts-app .ts-table thead { display: table-header-group; }
+    .ts-app .ts-table tr { display: table-row; }
+    .ts-app .ts-table td, .ts-app .ts-table th { display: table-cell; padding: var(--ts-space-3) var(--ts-space-2); border-top: 1px solid var(--ts-line); text-align: start; vertical-align: top; }
+    .ts-app .ts-table th { font-size: var(--ts-text-xs); color: var(--ts-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .ts-app .ts-facts { grid-template-columns: auto 1fr; }
+}
+@media (min-width: 960px) {
+    .ts-app { --ts-gutter: 24px; --ts-text-xl: 28px; }
+    .ts-app .ts-grid { grid-template-columns: 2fr 1fr; align-items: start; }
+}
+
+/* ---------------------------------------------------------------- 2. inside the Katalyst customer console */
+.ktl-app .ts-posts { list-style: none; margin: 0; padding: 0; }
+.ktl-app .ts-post { padding: var(--ktl-space-3) 0; border-top: 1px solid var(--ktl-line); }
+.ktl-app .ts-post:first-child { border-top: 0; }
+.ktl-app .ts-post.is-staff { border-inline-start: 4px solid var(--ktl-accent); padding-inline-start: var(--ktl-space-3); }
+.ktl-app .ts-post-head { margin: 0 0 var(--ktl-space-2); }
+.ktl-app .ts-post-body p { margin: 0 0 var(--ktl-space-2); }
+.ktl-app .ts-thread, .ktl-app .ts-side { display: grid; gap: var(--ktl-space-4); min-width: 0; align-content: start; }
+.ktl-app .ts-textarea { min-height: 160px; resize: vertical; }
+
+/* ---------------------------------------------------------------- 3. the original views of ticketsystem 1.x (administration) */
+.ts-legacy-button { min-width: 60px; }
+.ts-legacy-facts { width: 30%; min-width: 240px; float: right; margin: 0 0 1em 1em; }
+.ts-legacy-search { float: right; padding-right: 30px; }

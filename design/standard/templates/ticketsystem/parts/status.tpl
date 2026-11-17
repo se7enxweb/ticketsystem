@@ -1,0 +1,1 @@
+{* A status pill. Input: $label, $tone (ok, warn, bad, info, muted). *}<span class="ktl-pill is-{$tone|wash} ts-pill is-{$tone|wash}"><span class="ktl-dot ts-dot" aria-hidden="true"></span>{$label|i18n( 'extension/ticketsystem' )|wash}</span>

@@ -229,7 +229,7 @@
 </div>
 
 </form>
-<div id="searchbox" style="float: right; padding-right: 30px;">
+<div id="searchbox" class="ts-legacy-search">
       <form action={"/content/search"|ezurl}>
         {if eq( $ui_context, 'edit' )}
         <input id="searchtext" name="SearchText" type="text" value="" size="12" disabled="disabled" />
@@ -283,18 +283,18 @@
 										<input type="hidden" name="ContentObjectLanguageCode" value="{ezini( 'RegionalSettings','ContentObjectLocale' )}" />																														
 
 											{if $Nodes.can_remove}
-										        	<input class="button" style="width:60px;" type="submit" name="ActionRemove" value="Remove"/>
+										        	<input class="button ts-legacy-button" type="submit" name="ActionRemove" value="Remove"/>
 									        {else}
-										        	<input class="button-disabled" style="width:60px;" type="submit" name="ActionRemove"value="Remove" disabled="disabled" />
+										        	<input class="button-disabled ts-legacy-button" type="submit" name="ActionRemove" value="Remove" disabled="disabled" />
 									        {/if}
 
 											{if $Nodes.can_edit}
-											    <input class="button" style="width:60px;" type="submit" name="EditButton" value="Edit"/>
+											    <input class="button ts-legacy-button" type="submit" name="EditButton" value="Edit"/>
 											{else}
-											   	<input class="button-disabled" style="width:60px;" type="submit" name="EditButton" value="Edit" disabled="disabled"/>	
+											   	<input class="button-disabled ts-legacy-button" type="submit" name="EditButton" value="Edit" disabled="disabled"/>	
 											{/if}
 									
-										    <input class="button" style="width:60px;" name="UpdatePriorityButton" type="submit" value="View"/>	
+										    <input class="button ts-legacy-button" name="UpdatePriorityButton" type="submit" value="View"/>	
 									</form>	
 								 </td>
 						  	</tr>

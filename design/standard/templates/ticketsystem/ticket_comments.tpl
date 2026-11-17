@@ -83,16 +83,16 @@
 										<input type="hidden" name="ContentObjectID" value="{$Nodes.contentobject_id}" />																																
 
 											{if $Nodes.can_remove}
-										        	<input class="button" style="width:60px;" type="submit" name="ActionRemove" value="Remove"/>
+										        	<input class="button ts-legacy-button" type="submit" name="ActionRemove" value="Remove"/>
 									        {else}
-										        	<input class="button-disabled" style="width:60px;" type="submit" name="ActionRemove"value="Remove" disabled="disabled" />
+										        	<input class="button-disabled ts-legacy-button" type="submit" name="ActionRemove" value="Remove" disabled="disabled" />
 									        {/if}
 										    
 
 											{if $Nodes.can_edit}
-											    <input class="button" style="width:60px;" type="submit" name="EditButton" value="Edit"/>
+											    <input class="button ts-legacy-button" type="submit" name="EditButton" value="Edit"/>
 											{else}
-											   	<input class="button-disabled" style="width:60px;" type="submit" name="EditButton" value="Edit" disabled="disabled"/>
+											   	<input class="button-disabled ts-legacy-button" type="submit" name="EditButton" value="Edit" disabled="disabled"/>
 											{/if}
 									</form>							
 							</td>
