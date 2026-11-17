@@ -114,9 +114,12 @@ class ticketsystemNumber
             {
                 $collection->updateOne( $filter, array( '$setOnInsert' => $filter + array( 'last_value' => $start ) ), array( 'upsert' => true ) );
             }
-            catch ( Exception $e )
+            catch ( \MongoDB\Driver\Exception\ServerException $e )
             {
-                // another process created it first (duplicate key on the PRIMARY index): its value is used
+                // another process created it first (duplicate key on the PRIMARY index): its value is used; any
+                // other error is one
+                if ( (int)$e->getCode() !== 11000 && strpos( $e->getMessage(), 'E11000' ) === false )
+                    throw $e;
             }
         }
         $result = $collection->findOneAndUpdate( $filter, array( '$inc' => array( 'last_value' => 1 ) ),
