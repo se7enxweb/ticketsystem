@@ -4,6 +4,12 @@
 
 Work in progress for 1.1 (on main, not released).
 
+- Fixed: The TicketSystem pages of the administration draw on the admin4 model: names in tables are cells (a row
+  header is upper case and unbroken, so subjects ran out of the card), every fact is a "Label: value" pair, and the
+  list's path names its list ("TicketSystem > Needs a staff reply").
+- Updated: The README has a section "Administration" for installations without Katalyst; doc/views.md and
+  doc/permissions.md describe the tab TicketSystem, its left menu and its pages.
+
 - Added: Assigning and claiming tickets: an assignee in the index, "Take it" and "Assign" for staff, a staff reply to an
   unassigned ticket assigns it to the replier ([AssignmentSettings] ClaimOnReply), optional round-robin per queue
   ([AssignmentSettings] AutoAssign[]); the staff list filters "assigned to me" and "unassigned".

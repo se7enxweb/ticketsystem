@@ -25,6 +25,32 @@ Limits: `[LimitSettings]` (subject length, message length, new tickets per user 
 The views check their policy themselves: a visitor who is not signed in is sent to the sign-in page and back to the
 view afterwards; a signed-in user without the policy gets the kernel's "Access denied".
 
+## The administration: the tab TicketSystem
+
+In an administration siteaccess (its `SiteDesign` or an additional design is `admin*`: admin4, admin4l ...) the views
+render the templates of `design/admin4/templates/ticketsystem/` inside the admin page frame, with or without Katalyst:
+
+- **The tab** "TicketSystem" (`settings/menu.ini.append.php`, navigation part `ezticketsystemnavigationpart`) opens
+  `ticketsystem/list`. It is shown to users with `ticketsystem/manage` ([permissions.md](permissions.md)). With
+  Katalyst it stands next to Katalyst's own tab "Tickets", which reads the same tickets.
+- **The left menu** (`design:parts/ticketsystem/menu.tpl`): the lists (Not resolved, Needs a staff reply, Assigned
+  to me, Unassigned, Urgent, Escalated, Resolved or closed, All tickets, New ticket), then the management pages
+  (Reports, Search, Canned replies, SLA and escalation, Queues and categories, Mail, files and ratings; Import only
+  when `[ImportSettings] Enabled=enabled`). Each list is a link with view parameters.
+- **The list**, top down: the page head, the status figures (each a link to the same filter with that status), the
+  filter bar (it posts and is redirected to view parameters), the active filters as removable chips, the sortable
+  table and the pages. The path names the list: "TicketSystem > Needs a staff reply".
+- **A ticket**: the details as "Label: value" facts with the status change, the staff's work (take it, assign,
+  priority, queue), the SLA card, the conversation, the internal notes, the reply with canned replies, the rating
+  and the history.
+
+The pages use only the shared components of admin4 (`components.css`: `.a4-page`, `.a4-card`, `.a4-table`,
+`.a4-filterbar`, `.a4-figures`, `.a4-facts`, `.a4-btn` ...) and one rule set of their own,
+`design/admin4/stylesheets/modules/ticketsystem.css` (`.a4-ticketsystem-post`, tokens only). No `<style>`, no
+`style=""`, no colour of their own; `tests/ticketsystemAdminStylingTest.php` checks it, and that a table has no row
+headers (an `.a4-table` header is upper case and does not wrap) and that every fact of `.a4-facts` is a `<div>`
+with its `<dt>` and `<dd>`.
+
 ## Staff pages: search, reports, canned replies (1.1)
 
 | View | Policy | Page |

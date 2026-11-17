@@ -33,6 +33,18 @@ PHP 8.0 to 8.5, and it was cleaned up, re-documented and extended.
   frame and components.
 - The original views of ticketsystem 1.x in the administration are kept (fixed for Exponential 6).
 
+## Administration
+
+Without Katalyst, the help desk is worked from the administration: activate the extension, run the installer and
+give the staff the role "Ticket Support" (the Technical Support Group has it). They then get the top menu tab
+**TicketSystem** with its left menu: the lists of tickets (not resolved, needing a staff reply, assigned to me,
+unassigned, urgent, escalated, resolved or closed, all), and the pages for reports, search, canned replies, SLA and
+escalation, queues and categories, mail, files and ratings, and the import when one is configured. The list shows
+the status figures, a filter bar, sortable columns and pages, every filter as a view parameter; a ticket shows its
+details, the work on it, the SLA state, the conversation, internal notes, the reply and the history. The pages are
+drawn with admin4's shared components, light and dark. See [doc/views.md](doc/views.md) and
+[doc/permissions.md](doc/permissions.md). With Katalyst the tab stands next to Katalyst's own "Tickets" tab.
+
 ## Requirements
 
 - Exponential 6.0.15 or later

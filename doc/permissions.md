@@ -47,6 +47,14 @@ A role whose policies differ is completed (missing policies added); nothing else
 - Files (`ticketsystem/file/<id>`) are served only to users who may read the ticket ([attachments.md](attachments.md)).
 - Assigning, claiming, the priority and the queue need `manage` ([assignment.md](assignment.md)).
 
+## The tab TicketSystem in the administration
+
+- The top menu tab "TicketSystem" and its left menu are shown to users with `ticketsystem/manage` (menu.ini
+  `[Topmenu_ticketsystem] PolicyList[]`); the role "Ticket Support" of the Technical Support Group has it. A menu
+  policy cannot test a limitation, so staff who only read with Scope All open `ticketsystem/list` directly.
+- In the left menu the lists need `manage`; Reports and Search need `report`; Canned replies, SLA, queues, mail and
+  import need `manage`. Every page checks its policy again itself.
+
 ## Staff pages, notes and exports
 
 - **Search** (`ticketsystem/search`, function `report`): within the read scope. The internal notes are searched only
