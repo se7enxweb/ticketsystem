@@ -61,7 +61,7 @@ $time = new ticketsystemTime( $settings );
 $merge = new ticketsystemMerge( $access, $settings );
 $timeDraft = array( 'spent' => '', 'billable' => null, 'remark' => '' );
 // the time typed with a reply or a note (staff): array( error, minutes, billable or null for the default )
-$timeInput = function () use ( $http, $time, &$timeDraft, $isStaff ) {
+$timeInput = function () use ( $http, $time, &$timeDraft, &$isStaff ) {
     if ( !$isStaff || !$time->enabled() )
         return array( '', 0, null );
     $timeDraft = array( 'spent' => (string)$http->postVariable( 'TicketTimeSpent', '' ),
