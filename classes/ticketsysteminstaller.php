@@ -61,61 +61,96 @@ class ticketsystemInstaller
     {
         $db = eZDB::instance();
         $engine = ticketsystemSchema::engineOf( $db );
-        // the tables that existed before this run (their indexes came with them)
-        $have = ticketsystemSchema::existingTables( $db );
-        if ( $engine === 'oracle' || $engine === 'mongodb' )
-        {
-            // created by the kernel's schema handler from ticketsystemSchema::definition()
-            $missing = array();
-            foreach ( ticketsystemSchema::TABLES as $table )
-            {
-                if ( in_array( $table, $have, true ) )
-                    $this->line( "table $table exists" );
-                else
-                {
-                    $this->line( "create table $table", true );
-                    $missing[] = $table;
-                }
-            }
-            if ( $missing && !$this->dryRun )
-            {
-                foreach ( ticketsystemSchema::create( $missing, $db ) as $error )
-                    $this->fail( 'creating the tables: ' . $error );
-                $left = array_diff( $missing, ticketsystemSchema::existingTables( $db ) );
-                if ( $left && $this->ok )
-                    $this->fail( 'not created: ' . implode( ', ', $left ) );
-            }
-            return;
-        }
-        $file = __DIR__ . '/../sql/' . $engine . '/schema.sql';
-        if ( $engine === '' || !is_file( $file ) )
+        if ( $engine === '' )
         {
             $this->fail( 'no schema for the database type ' . $db->databaseName() . ' (create the tables of sql/mysql/schema.sql by hand)' );
             return;
         }
-        foreach ( preg_split( '/;\s*\n/', (string)file_get_contents( $file ) ) as $stmt )
+        // the tables that existed before this run; missing ones are created by the kernel's schema handler of the
+        // database from ticketsystemSchema::definition() (doc/databases.md)
+        $have = ticketsystemSchema::existingTables( $db );
+        $missing = array();
+        foreach ( ticketsystemSchema::TABLES as $table )
         {
-            $stmt = trim( $stmt );
-            if ( $stmt === '' )
-                continue;
-            if ( preg_match( '/^CREATE TABLE (\w+)/i', $stmt, $m ) )
-                $table = strtolower( $m[1] );
-            else if ( preg_match( '/^CREATE (?:UNIQUE )?INDEX \w+ ON (\w+)/i', $stmt, $m ) )
-                $table = strtolower( $m[1] );
-            else
-                continue;
-            if ( in_array( $table, $have, true ) && stripos( $stmt, 'CREATE TABLE' ) === 0 )
+            if ( !in_array( $table, $have, true ) )
             {
-                $this->line( "table $table exists" );
+                $this->line( "create table $table", true );
+                $missing[] = $table;
                 continue;
             }
-            if ( in_array( $table, $have, true ) )
-                continue; // its indexes came with it
-            if ( stripos( $stmt, 'CREATE TABLE' ) === 0 )
-                $this->line( "create table $table", true );
-            if ( !$this->dryRun && !$db->query( $stmt ) )
-                $this->fail( "creating $table" );
+            $this->line( "table $table exists" );
+            // a table of an older release: the columns (and their indexes) it lacks
+            $done = array();
+            foreach ( ticketsystemSchema::missingColumns( $table, $db ) as $column => $statements )
+            {
+                $this->line( "table $table: add column $column", true );
+                if ( $this->dryRun )
+                    continue;
+                foreach ( $statements as $i => $sql )
+                {
+                    if ( isset( $done[$sql] ) )
+                        continue;
+                    $done[$sql] = true;
+                    if ( !ticketsystemSchema::tryQuery( $db, $sql ) )
+                    {
+                        if ( $i === 0 )
+                            $this->fail( "adding $table.$column" );
+                        else
+                            $this->lines[] = "NOTE  $table: an index of $column was not added (it may exist under another name)";
+                    }
+                }
+            }
         }
+        if ( $missing && !$this->dryRun )
+        {
+            // SQLite: inside a transaction a statement waits for the site's writer instead of failing at once
+            if ( $engine === 'sqlite' )
+                $db->begin();
+            $errors = ticketsystemSchema::create( $missing, $db );
+            if ( $engine === 'sqlite' )
+                $db->commit();
+            foreach ( $errors as $error )
+                $this->fail( 'creating the tables: ' . $error );
+            $left = array_diff( $missing, ticketsystemSchema::existingTables( $db ) );
+            if ( $left && $this->ok )
+                $this->fail( 'not created: ' . implode( ', ', $left ) );
+        }
+    }
+
+    /** The post index of the staff search for tickets posted before 1.1 (idempotent; a few hundred tickets a run). */
+    public function postIndex( $limit = 500 )
+    {
+        $settings = $this->settings;
+        $n = 0;
+        foreach ( ticketsystemTicket::fetchWhere( '', 0, (int)$limit, 'id ASC' ) as $t )
+        {
+            $object = $t->contentObject();
+            if ( !$object || ticketsystemPostIndex::countBy( array( 'object_id' => (int)$object->attribute( 'id' ) ) ) )
+                continue;
+            $n++;
+            if ( $this->dryRun )
+                continue;
+            $map = $object->dataMap();
+            $text = isset( $map['description'] ) ? implode( "\n\n", ticketsystemText::fromXml( $map['description']->attribute( 'data_text' ) ) ) : '';
+            ticketsystemService::indexPost( $t, $object, (int)$t->attribute( 'opener_id' ), false, $text );
+            foreach ( (array)eZContentObjectTreeNode::subTreeByNodeID( array( 'Depth' => 1, 'ClassFilterType' => 'include',
+                          'ClassFilterArray' => array( $settings->postClass() ), 'Limitation' => array(), 'IgnoreVisibility' => true ),
+                          (int)$t->attribute( 'node_id' ) ) as $child )
+            {
+                $o = $child->attribute( 'object' );
+                $m = $o->dataMap();
+                $owner = (int)$o->attribute( 'owner_id' );
+                $u = eZUser::fetch( $owner );
+                $staff = $u instanceof eZUser && $owner !== (int)$t->attribute( 'opener_id' ) && ( new ticketsystemAccess( $u ) )->isStaff();
+                ticketsystemService::indexPost( $t, $o, $owner, $staff, isset( $m['comment'] ) ? implode( "\n\n", ticketsystemText::fromXml( $m['comment']->attribute( 'data_text' ) ) ) : '' );
+            }
+            if ( !(int)$t->attribute( 'priority_rank' ) )
+            {
+                $t->setAttribute( 'priority_rank', $settings->priorityRank( $t->attribute( 'priority' ) ) );
+                $t->store();
+            }
+        }
+        $this->line( $n ? "index the posts of $n ticket(s) for the staff search" : 'the posts of every ticket are in the search index', $n > 0 );
     }
 
     // ------------------------------------------------------------------------------------------------ classes
@@ -310,6 +345,7 @@ class ticketsystemInstaller
                 array( 'ticketsystem', 'reply', array( 'Scope' => array( '3' ) ) ),
                 array( 'ticketsystem', 'create', array() ),
                 array( 'ticketsystem', 'manage', array() ),
+                array( 'ticketsystem', 'report', array() ),
                 array( 'ticketsystem', 'use', array() ),
                 array( 'user', 'login', $login ? array( 'SiteAccess' => $login ) : array() ),
                 array( 'user', 'selfedit', array() ),

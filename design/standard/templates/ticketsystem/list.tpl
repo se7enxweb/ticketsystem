@@ -1,5 +1,5 @@
 {* ticketsystem/list (doc/views.md): the tickets the user may read, newest activity first.
-   Input: $tickets (ticketsystemView::row), $total, $counts (open, done, all), $filter, $offset, $limit, $may_create,
+   Input: $tickets (ticketsystemView::row), $total, $counts (open, done, all), $tab (open, done, all), $offset, $limit, $may_create,
    $is_staff, the frame's variables. Mobile first: the table is a list of blocks on phones (katalyst.js / the
    ts-table rules). No inline CSS. *}
 {def $tsI = 'extension/ticketsystem'}
@@ -14,15 +14,15 @@
 </div>
 
 <nav class="ktl-tabs ts-tabs" aria-label="{'Filter tickets'|i18n( $tsI )|wash}">
-    <a class="ktl-tab ts-tab{if $filter|eq( 'open' )} is-current{/if}" href={'ticketsystem/list'|ezurl}{if $filter|eq( 'open' )} aria-current="page"{/if}>{'Open'|i18n( $tsI )} <span class="ktl-badge ts-badge">{$counts.open}</span></a>
-    <a class="ktl-tab ts-tab{if $filter|eq( 'done' )} is-current{/if}" href={'ticketsystem/list/(status)/done'|ezurl}{if $filter|eq( 'done' )} aria-current="page"{/if}>{'Solved and closed'|i18n( $tsI )} <span class="ktl-badge ts-badge">{$counts.done}</span></a>
-    <a class="ktl-tab ts-tab{if $filter|eq( 'all' )} is-current{/if}" href={'ticketsystem/list/(status)/all'|ezurl}{if $filter|eq( 'all' )} aria-current="page"{/if}>{'All'|i18n( $tsI )} <span class="ktl-badge ts-badge">{$counts.all}</span></a>
+    <a class="ktl-tab ts-tab{if $tab|eq( 'open' )} is-current{/if}" href={'ticketsystem/list'|ezurl}{if $tab|eq( 'open' )} aria-current="page"{/if}>{'Open'|i18n( $tsI )} <span class="ktl-badge ts-badge">{$counts.open}</span></a>
+    <a class="ktl-tab ts-tab{if $tab|eq( 'done' )} is-current{/if}" href={'ticketsystem/list/(status)/done'|ezurl}{if $tab|eq( 'done' )} aria-current="page"{/if}>{'Solved and closed'|i18n( $tsI )} <span class="ktl-badge ts-badge">{$counts.done}</span></a>
+    <a class="ktl-tab ts-tab{if $tab|eq( 'all' )} is-current{/if}" href={'ticketsystem/list/(status)/all'|ezurl}{if $tab|eq( 'all' )} aria-current="page"{/if}>{'All'|i18n( $tsI )} <span class="ktl-badge ts-badge">{$counts.all}</span></a>
 </nav>
 
 {if $tickets|count|eq( 0 )}
 <section class="ktl-card ktl-empty ts-card ts-empty" id="ts-empty">
     <span class="ktl-empty-icon ts-empty-icon" aria-hidden="true"><i class="fa-solid fa-life-ring"></i></span>
-    <h2 class="ktl-h2 ts-h2">{if $filter|eq( 'open' )}{'No open tickets'|i18n( $tsI )}{else}{'No tickets here'|i18n( $tsI )}{/if}</h2>
+    <h2 class="ktl-h2 ts-h2">{if $tab|eq( 'open' )}{'No open tickets'|i18n( $tsI )}{else}{'No tickets here'|i18n( $tsI )}{/if}</h2>
     <p>{'When you open a ticket, it shows here with its status and every reply.'|i18n( $tsI )}</p>
     {if $may_create}<p class="ktl-actions ts-actions"><a class="ktl-btn is-primary ts-btn is-primary" href={'ticketsystem/new'|ezurl}>{'Open a ticket'|i18n( $tsI )}</a></p>{/if}
 </section>
@@ -53,8 +53,8 @@
     </div>
     {if $total|gt( $limit )}
     <nav class="ktl-pager ts-pager" aria-label="{'Pages'|i18n( $tsI )|wash}">
-        {if $offset|gt( 0 )}<a class="ktl-btn is-ghost ts-btn is-ghost" href={concat( 'ticketsystem/list/(status)/', $filter, '/(offset)/', max( 0, $offset|sub( $limit ) ) )|ezurl}>{'Newer'|i18n( $tsI )}</a>{/if}
-        {if $offset|sum( $limit )|lt( $total )}<a class="ktl-btn is-ghost ts-btn is-ghost" href={concat( 'ticketsystem/list/(status)/', $filter, '/(offset)/', $offset|sum( $limit ) )|ezurl}>{'Older'|i18n( $tsI )}</a>{/if}
+        {if $offset|gt( 0 )}<a class="ktl-btn is-ghost ts-btn is-ghost" href={concat( 'ticketsystem/list/(status)/', $tab, '/(offset)/', max( 0, $offset|sub( $limit ) ) )|ezurl}>{'Newer'|i18n( $tsI )}</a>{/if}
+        {if $offset|sum( $limit )|lt( $total )}<a class="ktl-btn is-ghost ts-btn is-ghost" href={concat( 'ticketsystem/list/(status)/', $tab, '/(offset)/', $offset|sum( $limit ) )|ezurl}>{'Older'|i18n( $tsI )}</a>{/if}
     </nav>
     {/if}
 </section>

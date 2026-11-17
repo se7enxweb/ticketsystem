@@ -208,3 +208,10 @@
 .ts-legacy-button { min-width: 60px; }
 .ts-legacy-facts { width: 30%; min-width: 240px; float: right; margin: 0 0 1em 1em; }
 .ts-legacy-search { float: right; padding-right: 30px; }
+
+/* 1.1: files of a post, internal notes, the rating */
+.ts-app .ts-files { display: flex; flex-wrap: wrap; gap: var(--ts-space-2); margin: var(--ts-space-2) 0 0; padding: 0; list-style: none; }
+.ts-app .ts-file { display: inline-flex; gap: var(--ts-space-1); align-items: center; border: 1px solid var(--ts-line); border-radius: var(--ts-radius-s); padding: var(--ts-space-1) var(--ts-space-2); text-decoration: none; }
+.ts-app .ts-note { border-inline-start: 3px solid var(--ts-warn); padding-inline-start: var(--ts-space-3); }
+.ts-app .ts-stars { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--ts-space-3); }
+.ts-app .ts-stars legend { font-weight: 600; margin-bottom: var(--ts-space-1); }

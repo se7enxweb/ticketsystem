@@ -57,6 +57,24 @@
                     "options": {
                         "name": "ticketsystem_ticket_status"
                     }
+                },
+                {
+                    "keys": {
+                        "assignee_id": 1,
+                        "status": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_ticket_assignee"
+                    }
+                },
+                {
+                    "keys": {
+                        "escalation": 1,
+                        "status": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_ticket_escal"
+                    }
                 }
             ]
         },
@@ -70,6 +88,183 @@
                     },
                     "options": {
                         "name": "PRIMARY",
+                        "unique": true
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ticketsystem_note",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "ticket_id": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_note_ticket"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ticketsystem_event",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "ticket_id": 1,
+                        "created": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_event_ticket"
+                    }
+                },
+                {
+                    "keys": {
+                        "kind": 1,
+                        "created": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_event_kind"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ticketsystem_canned",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "owner_id": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_canned_owner"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ticketsystem_attachment",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "ticket_id": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_attach_ticket"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ticketsystem_post",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "ticket_id": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_post_ticket"
+                    }
+                },
+                {
+                    "keys": {
+                        "object_id": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_post_object",
+                        "unique": true
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ticketsystem_mailin",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "message_key": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_mailin_key",
+                        "unique": true
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ticketsystem_import",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "source": 1,
+                        "kind": 1,
+                        "external_id": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_import_ext",
                         "unique": true
                     }
                 }

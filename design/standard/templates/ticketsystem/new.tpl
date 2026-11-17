@@ -14,7 +14,7 @@
 
 <section class="ktl-card ts-card" aria-labelledby="ts-new-h">
     <div class="ktl-card-head ts-card-head"><h2 class="ktl-h2 ts-h2" id="ts-new-h"><i class="fa-solid fa-pen ktl-icon" aria-hidden="true"></i>{'Your request'|i18n( $tsI )}</h2></div>
-    <form class="ktl-form ts-form" method="post" action={'ticketsystem/new'|ezurl} id="ts-new-form">
+    <form class="ktl-form ts-form" method="post" action={'ticketsystem/new'|ezurl} id="ts-new-form" enctype="multipart/form-data">
         <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
         <div class="ktl-field ts-field">
             <label for="ts-subject">{'Subject'|i18n( $tsI )}</label>
@@ -50,6 +50,13 @@
             {if is_set( $field_errors.body )}<p class="ktl-field-error ts-field-error" id="ts-body-error">{$field_errors.body|i18n( $tsI )|wash}</p>{/if}
             <p class="ktl-muted ktl-small ts-muted ts-small">{'Please never send passwords here. If we need access, we tell you how to share it safely.'|i18n( $tsI )}</p>
         </div>
+        {if $attach.enabled}
+        <div class="ktl-field ts-field">
+            <label for="ts-files">{'Attachments'|i18n( $tsI )}</label>
+            <input class="ktl-input ts-input" type="file" id="ts-files" name="TicketFiles[]" multiple="multiple" accept="{$attach.accept|wash}" />
+            <p class="ktl-muted ktl-small ts-muted ts-small">{'Up to %count files, at most %size MB each: %types.'|i18n( $tsI,, hash( '%count', $attach.max_files, '%size', $attach.max_mb, '%types', $attach.types ) )|wash}</p>
+        </div>
+        {/if}
         <p class="ktl-actions ts-actions">
             <button type="submit" class="ktl-btn is-primary ts-btn is-primary" name="TicketCreate" value="1" id="ts-create">{'Open the ticket'|i18n( $tsI )}</button>
             <a class="ktl-btn is-ghost ts-btn is-ghost" href={'ticketsystem/list'|ezurl}>{'Cancel'|i18n( $tsI )}</a>

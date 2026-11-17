@@ -103,8 +103,12 @@ class ticketsystemMailer
         if ( (string)$d['priority'] !== '' )
             $rows[] = array( 'label' => 'Priority', 'value' => (string)$d['priority'] );
         $footer = sprintf( 'You get this mail because you follow ticket %s. To answer, open the ticket: %s', $number, (string)$d['url'] );
+        $reference = isset( $d['reference'] ) ? (string)$d['reference'] : '';
+        if ( $reference !== '' )
+            $footer = sprintf( 'You get this mail because you follow ticket %s. Answer this mail, or open the ticket: %s', $number, (string)$d['url'] );
+        $rate = isset( $d['rate_url'] ) ? (string)$d['rate_url'] : '';
 
-        $text = $intro . "\n\n";
+        $text = ( $reference !== '' ? ticketsystemReplyToken::MARKER . "\n\n" : '' ) . $intro . "\n\n";
         if ( $notice !== '' )
             $text .= $notice . "\n\n";
         $text .= str_repeat( '-', 60 ) . "\n";
@@ -112,7 +116,11 @@ class ticketsystemMailer
         $text .= str_repeat( '-', 60 ) . "\n\n";
         foreach ( $rows as $r )
             $text .= str_pad( $r['label'] . ':', 10 ) . ' ' . $r['value'] . "\n";
+        if ( $rate !== '' )
+            $text .= "\nHow did we do? Rate this ticket: " . $rate . "\n";
         $text .= "\nView the ticket: " . (string)$d['url'] . "\n\n" . $footer . "\n";
+        if ( $reference !== '' )
+            $text .= 'Ticket reference: ' . $reference . "\n";
 
         $paragraphs = array();
         foreach ( (array)$d['paragraphs'] as $p )
@@ -127,7 +135,8 @@ class ticketsystemMailer
             $paragraphs[] = $parts;
         }
         return array( 'subject' => $subject, 'text' => $text, 'title' => $subject, 'intro' => $intro, 'notice' => $notice,
-                      'body' => $paragraphs, 'rows' => $rows, 'url' => (string)$d['url'], 'footer' => $footer );
+                      'body' => $paragraphs, 'rows' => $rows, 'url' => (string)$d['url'], 'footer' => $footer
+                                . ( $reference !== '' ? ' Ticket reference: ' . $reference : '' ), 'rate_url' => $rate );
     }
 
     /** The HTML part: design:mail/layout.tpl when the kernel has it, else a plain page. */
@@ -142,7 +151,10 @@ class ticketsystemMailer
             $tpl->setVariable( 'mail_notice', $c['notice'] );
             $tpl->setVariable( 'mail_paragraphs', $c['body'] );
             $tpl->setVariable( 'mail_rows', $c['rows'] );
-            $tpl->setVariable( 'mail_buttons', array( array( 'label' => 'View the ticket', 'url' => $c['url'], 'kind' => 'primary' ) ) );
+            $buttons = array( array( 'label' => 'View the ticket', 'url' => $c['url'], 'kind' => 'primary' ) );
+            if ( !empty( $c['rate_url'] ) )
+                $buttons[] = array( 'label' => 'Rate this ticket', 'url' => $c['rate_url'], 'kind' => 'secondary' );
+            $tpl->setVariable( 'mail_buttons', $buttons );
             $tpl->setVariable( 'mail_links_note', $c['footer'] );
             $tpl->setVariable( 'mail_site_name', $this->brand() );
             $html = (string)$tpl->fetch( 'design:mail/layout.tpl' );
@@ -212,11 +224,17 @@ class ticketsystemMailer
                 continue;
             }
             $seen[$address] = true;
-            $c = self::content( $base + array( 'own_copy' => (int)$r['user_id'] === (int)$posterId ) );
+            $reference = $r['user_id'] > 0 && $this->mailInEnabled() ? ticketsystemReplyToken::reference( $base['number'], (int)$r['user_id'], $this->secret() ) : '';
+            $rate = '';
+            if ( $posterIsStaff && $r['user_id'] > 0 && (int)$r['user_id'] !== (int)$posterId && $set->isDone( $t->attribute( 'status' ) )
+                 && $this->settings->enabled( 'CSATSettings', 'Enabled' ) && $this->settings->enabled( 'CSATSettings', 'AskInMail' )
+                 && $this->isCustomer( $t, (int)$r['user_id'] ) )
+                $rate = $base['url'] . '#ts-rate';
+            $c = self::content( $base + array( 'own_copy' => (int)$r['user_id'] === (int)$posterId, 'reference' => $reference, 'rate_url' => $rate ) );
             $html = $this->html( $c );
             if ( $this->captured( $address ) )
             {
-                $this->capture( $address, $c, $html, $messageId, $root );
+                $this->capture( $address, $c, $html, $messageId, $root, $reference !== '' ? ticketsystemReplyToken::replyAddress( $this->settings->value( 'MailInSettings', 'ReplyAddress', '' ), $base['number'], (int)$r['user_id'], $this->secret() ) : '' );
                 $result['captured']++;
                 continue;
             }
@@ -224,6 +242,8 @@ class ticketsystemMailer
             $mail->setSender( $this->sender(), (string)$this->settings->value( 'MailSettings', 'SenderName', '' ) ?: false );
             $mail->setReceiver( $r['email'], $r['name'] !== '' ? $r['name'] : false );
             $reply = trim( (string)$this->settings->value( 'MailSettings', 'ReplyTo', '' ) );
+            if ( $reference !== '' && ( $tokenAddress = ticketsystemReplyToken::replyAddress( $this->settings->value( 'MailInSettings', 'ReplyAddress', '' ), $base['number'], (int)$r['user_id'], $this->secret() ) ) !== '' )
+                $reply = $tokenAddress;
             if ( $reply !== '' )
                 $mail->setReplyTo( $reply );
             $mail->setSubject( $c['subject'] );
@@ -278,10 +298,10 @@ class ticketsystemMailer
         return $out;
     }
 
-    protected function capture( $address, array $c, $html, $messageId, $root )
+    protected function capture( $address, array $c, $html, $messageId, $root, $replyTo = '' )
     {
         $mail = array( 'to' => $address, 'from' => $this->sender(), 'subject' => $c['subject'], 'text' => $c['text'], 'html' => $html,
-                       'message_id' => $messageId, 'references' => $root );
+                       'message_id' => $messageId, 'references' => $root, 'reply_to' => $replyTo );
         if ( self::$capture !== null )
         {
             self::$capture[] = $mail;
@@ -296,8 +316,105 @@ class ticketsystemMailer
             return;
         $boundary = 'ts-' . bin2hex( random_bytes( 8 ) );
         $eml = "From: {$mail['from']}\nTo: $address\nSubject: {$c['subject']}\nMessage-ID: $messageId\nReferences: $root\n"
+             . ( $replyTo !== '' ? "Reply-To: $replyTo\n" : '' )
              . "MIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"$boundary\"\n\n"
              . "--$boundary\nContent-Type: text/plain; charset=utf-8\n\n{$c['text']}\n--$boundary\nContent-Type: text/html; charset=utf-8\n\n$html\n--$boundary--\n";
         file_put_contents( rtrim( $dir, '/' ) . '/' . date( 'Ymd-His' ) . '-' . preg_replace( '/[^A-Za-z0-9-]/', '', $c['subject'] === '' ? 'mail' : substr( md5( $messageId . $address ), 0, 10 ) ) . '.eml', $eml );
+    }
+
+    // ------------------------------------------------------------------------------------------- 1.1
+
+    public function mailInEnabled()
+    {
+        return $this->settings->enabled( 'MailInSettings', 'Enabled', 'disabled' );
+    }
+
+    /** The secret of the signed ticket references: [MailInSettings] TokenSecret, else one derived from the installation. */
+    public function secret()
+    {
+        $s = trim( (string)$this->settings->value( 'MailInSettings', 'TokenSecret', '' ) );
+        if ( $s !== '' )
+            return $s;
+        $ini = eZINI::instance();
+        return hash( 'sha256', 'ticketsystem|' . $ini->variable( 'DatabaseSettings', 'Database' ) . '|' . $ini->variable( 'DatabaseSettings', 'Password' )
+                               . '|' . eZSys::rootDir() );
+    }
+
+    /** Whether a user belongs to the ticket's customer side (the opener or a user of its account), not support staff. */
+    protected function isCustomer( ticketsystemTicket $t, $userId )
+    {
+        if ( (int)$userId === (int)$t->attribute( 'opener_id' ) )
+            return true;
+        $u = eZUser::fetch( (int)$userId );
+        if ( !$u instanceof eZUser )
+            return false;
+        $a = new ticketsystemAccess( $u );
+        return !$a->isStaff() && in_array( (string)$t->attribute( 'account_key' ), $a->keys(), true );
+    }
+
+    /** One plain mail to users and addresses (notices and alerts to staff); captured like the posts. */
+    protected function sendPlain( ticketsystemTicket $t, array $userIds, array $addresses, $subject, array $lines )
+    {
+        $sent = 0;
+        $to = array();
+        foreach ( array_unique( array_map( 'intval', $userIds ) ) as $id )
+        {
+            $u = eZUser::fetch( $id );
+            if ( $u instanceof eZUser && $u->isEnabled() && ( new ticketsystemAccess( $u ) )->canRead( $t ) )
+                $to[] = (string)$u->attribute( 'email' );
+        }
+        foreach ( $addresses as $a )
+            if ( eZMail::validate( (string)$a ) )
+                $to[] = (string)$a;
+        $url = $this->ticketUrl( $t );
+        $c = array( 'subject' => $subject, 'text' => implode( "\n", $lines ) . "\n\nView the ticket: $url\n", 'title' => $subject,
+                    'intro' => (string)reset( $lines ), 'notice' => '', 'body' => array_map( function ( $l ) { return array( array( 'text' => $l ) ); }, $lines ),
+                    'rows' => array( array( 'label' => 'Ticket', 'value' => (string)$t->attribute( 'number' ) ) ), 'url' => $url,
+                    'footer' => 'You get this mail as support staff of this ticket.', 'rate_url' => '' );
+        $host = parse_url( $this->siteUrl(), PHP_URL_HOST ) ?: 'ticketsystem.invalid';
+        $id = '<ticketsystem.' . strtolower( (string)$t->attribute( 'number' ) ) . '.notice.' . bin2hex( random_bytes( 4 ) ) . '@' . $host . '>';
+        foreach ( array_unique( array_map( 'strtolower', $to ) ) as $address )
+        {
+            $html = $this->html( $c );
+            if ( $this->captured( $address ) )
+            {
+                $this->capture( $address, $c, $html, $id, '<ticketsystem.' . strtolower( (string)$t->attribute( 'number' ) ) . '@' . $host . '>' );
+                $sent++;
+                continue;
+            }
+            $mail = new eZMail();
+            $mail->setSender( $this->sender(), (string)$this->settings->value( 'MailSettings', 'SenderName', '' ) ?: false );
+            $mail->setReceiver( $address );
+            $mail->setSubject( $subject );
+            $mail->setMessageID( $id );
+            $mail->addExtraHeader( 'X-Ticket-Number', (string)$t->attribute( 'number' ) );
+            $mail->addExtraHeader( 'Auto-Submitted', 'auto-generated' );
+            if ( class_exists( 'expMailTemplateBody' ) )
+                expMailTemplateBody::setAlternative( $mail, $c['text'], $html );
+            else
+                $mail->setBody( $c['text'] );
+            if ( eZMailTransport::send( $mail ) )
+                $sent++;
+        }
+        eZLog::write( sprintf( 'ticket %s notice "%s": %d mail(s)', $t->attribute( 'number' ), $subject, $sent ), 'ticketsystem.log' );
+        return $sent;
+    }
+
+    /** "Ticket ... was assigned to you" to the new assignee. */
+    public function sendNotice( ticketsystemTicket $t, $userId, $kind )
+    {
+        $n = (string)$t->attribute( 'number' );
+        return $this->sendPlain( $t, array( (int)$userId ), array(), sprintf( '[%s] Assigned to you: %s', $n, (string)$t->attribute( 'subject' ) ),
+                                 array( sprintf( 'Ticket %s was assigned to you.', $n ) ) );
+    }
+
+    /** The escalation alert to the assignee (or the staff group) and [SLASettings] AlertRecipients. */
+    public function sendAlert( ticketsystemTicket $t, $level, $why, array $userIds )
+    {
+        $n = (string)$t->attribute( 'number' );
+        $what = $why === 'manual' ? 'was escalated by staff' : ( $level >= 2 ? 'missed its SLA target' : 'reached ' . ( new ticketsystemSla( $this->settings ) )->warnPercent() . ' % of its SLA time' );
+        return $this->sendPlain( $t, $userIds, (array)$this->settings->value( 'SLASettings', 'AlertRecipients', array() ),
+                                 sprintf( '[%s] Escalated: %s', $n, (string)$t->attribute( 'subject' ) ),
+                                 array( sprintf( 'Ticket %s %s.', $n, $what ), sprintf( 'Escalation level: %d.', (int)$level ) ) );
     }
 }

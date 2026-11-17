@@ -1,7 +1,8 @@
 <?php
 /**
  * ticketsystem/new: opens a ticket. POST TicketCreate with the form token, TicketSubject, TicketBody, TicketCategory,
- * TicketPriority and, with Katalyst, TicketSubscription (one of the account's own sites; anything else is ignored).
+ * TicketPriority, files TicketFiles[] ([AttachmentSettings]) and, with Katalyst, TicketSubscription (one of the
+ * account's own sites; anything else is ignored).
  * Post/redirect/get to the new ticket.
  *
  * @copyright Copyright (C) 2026 7x. All rights reserved.
@@ -53,7 +54,9 @@ if ( $http->hasPostVariable( 'TicketCreate' ) )
         $errors[] = 'The form had expired. Nothing was sent; please send it again.';
     else
     {
-        $r = ( new ticketsystemService( $access, $settings ) )->open( $values );
+        list( $upload, $uploadErrors ) = ( new ticketsystemFiles( $settings ) )->fromUpload( 'TicketFiles' );
+        $r = $uploadErrors ? array( 'ok' => false, 'message' => 'Please check the files.', 'errors' => $uploadErrors )
+                           : ( new ticketsystemService( $access, $settings ) )->open( $values + array( 'files' => $upload ) );
         if ( $r['ok'] )
         {
             ticketsystemView::flash( array( $r['message'] ) );
@@ -69,4 +72,5 @@ if ( $http->hasPostVariable( 'TicketCreate' ) )
 $Result = ticketsystemView::render( $user, 'tickets', 'new', array(
     'values' => $values, 'ts_errors' => $errors, 'field_errors' => $fieldErrors,
     'categories' => $settings->categories(), 'priorities' => $settings->priorities(), 'sites' => $sites,
+    'attach' => ( new ticketsystemFiles( $settings ) )->formInfo(),
 ), ticketsystemView::path( ezpI18n::tr( 'extension/ticketsystem', 'New ticket' ) ) );

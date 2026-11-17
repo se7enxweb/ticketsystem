@@ -31,6 +31,8 @@ class ticketsystemSchemaTest extends TestCase
                     $indexes[$m[2]] = array( $m[1] ? 'unique' : 'non-unique', array_map( 'trim', explode( ',', $m[3] ) ) );
                 else if ( preg_match( '/^(\w+) (int|varchar)\((\d+)\)/', $line, $m ) )
                     $columns[$m[1]] = array( $m[2], (int)$m[3], stripos( $line, 'AUTO_INCREMENT' ) !== false );
+                else if ( preg_match( '/^(\w+) longtext\b/', $line, $m ) )
+                    $columns[$m[1]] = array( 'longtext', 0, false );
             }
             $out[$t[1]] = array( $columns, $indexes );
         }
@@ -55,7 +57,8 @@ class ticketsystemSchemaTest extends TestCase
                 else
                 {
                     $this->assertSame( $type, $field['type'], "$table.$name" );
-                    $this->assertSame( $length, $field['length'], "$table.$name" );
+                    if ( $type !== 'longtext' )
+                        $this->assertSame( $length, $field['length'], "$table.$name" );
                 }
             }
             $this->assertEqualsCanonicalizing( array_keys( $indexes ), array_keys( $d['indexes'] ), "$table: the indexes" );
@@ -100,5 +103,19 @@ class ticketsystemSchemaTest extends TestCase
         // a single-key PRIMARY index: the driver fills ticketsystem_ticket.id; the counter's is (prefix, year), unique
         $this->assertSame( array( 'keys' => array( 'id' => 1 ), 'options' => array( 'name' => 'PRIMARY', 'unique' => true ) ), $collections['ticketsystem_ticket'][0] );
         $this->assertSame( array( 'keys' => array( 'prefix' => 1, 'year' => 1 ), 'options' => array( 'name' => 'PRIMARY', 'unique' => true ) ), $collections['ticketsystem_counter'][0] );
+    }
+
+    /** 1.1: every engine's file and share/db_schema.dba (the MongoDB driver reads the column types from it) name every table. */
+    public function testEveryGeneratedFileHasEveryTable()
+    {
+        foreach ( array( 'mysql', 'postgresql', 'sqlite', 'oracle' ) as $engine )
+        {
+            $sql = file_get_contents( __DIR__ . "/../sql/$engine/schema.sql" );
+            foreach ( ticketsystemSchema::TABLES as $table )
+                $this->assertMatchesRegularExpression( '/CREATE TABLE (IF NOT EXISTS )?' . $table . '\b/', $sql, "$engine: $table" );
+        }
+        $schema = null;
+        include __DIR__ . '/../share/db_schema.dba';
+        $this->assertSame( ticketsystemSchema::definition(), array_diff_key( $schema, array( '_info' => 1 ) ), 'share/db_schema.dba is current' );
     }
 }

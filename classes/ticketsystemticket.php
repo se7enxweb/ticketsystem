@@ -40,6 +40,25 @@ class ticketsystemTicket extends eZPersistentObject
                 'modified' => $int( 'Modified' ),
                 'resolved' => $int( 'Resolved' ),
                 'closed' => $int( 'Closed' ),
+                // 1.1: assignment, SLA, rating, counts (doc/architecture.md)
+                'priority_rank' => $int( 'PriorityRank' ),
+                'assignee_id' => $int( 'AssigneeID' ),
+                'assigned' => $int( 'Assigned' ),
+                'source' => $str( 'Source' ),
+                'external_id' => $str( 'ExternalID' ),
+                'sla_level' => $str( 'SLALevel' ),
+                'response_due' => $int( 'ResponseDue' ),
+                'resolve_due' => $int( 'ResolveDue' ),
+                'responded' => $int( 'Responded' ),
+                'paused_since' => $int( 'PausedSince' ),
+                'escalation' => $int( 'Escalation' ),
+                'escalated' => $int( 'Escalated' ),
+                'breached' => $int( 'Breached' ),
+                'rating' => $int( 'Rating' ),
+                'rating_comment' => $str( 'RatingComment' ),
+                'rated' => $int( 'Rated' ),
+                'note_count' => $int( 'NoteCount' ),
+                'attachment_count' => $int( 'AttachmentCount' ),
             ),
             'keys' => array( 'id' ),
             'increment_key' => 'id',
@@ -51,7 +70,29 @@ class ticketsystemTicket extends eZPersistentObject
 
     public static function create( array $row )
     {
-        return new self( $row + array( 'id' => null ) );
+        $defaults = array();
+        foreach ( self::definition()['fields'] as $name => $f )
+            $defaults[$name] = $f['default'];
+        $defaults['source'] = 'web';
+        $row = $row + $defaults;
+        $row['id'] = null;
+        return new self( $row );
+    }
+
+    /** The row as an array of its fields, typed (Oracle hands an empty string back as null). */
+    public function values()
+    {
+        $out = array();
+        foreach ( self::definition()['fields'] as $name => $f )
+            $out[$name] = $f['datatype'] === 'integer' ? (int)$this->attribute( $name ) : (string)$this->attribute( $name );
+        return $out;
+    }
+
+    /** " WHERE <condition>", or nothing for a condition that is always true. */
+    public static function whereSql( $where )
+    {
+        $where = trim( (string)$where );
+        return $where === '' || $where === '1=1' ? '' : ' WHERE ' . $where;
     }
 
     public static function fetch( $id )
@@ -80,17 +121,17 @@ class ticketsystemTicket extends eZPersistentObject
      * @param int $limit
      * @return ticketsystemTicket[]
      */
-    public static function fetchWhere( $where, $offset = 0, $limit = 25 )
+    public static function fetchWhere( $where, $offset = 0, $limit = 25, $orderBy = 'modified DESC, id DESC' )
     {
         $db = eZDB::instance();
-        $rows = $db->arrayQuery( 'SELECT * FROM ticketsystem_ticket WHERE ' . $where . ' ORDER BY modified DESC, id DESC',
+        $rows = $db->arrayQuery( 'SELECT * FROM ticketsystem_ticket' . self::whereSql( $where ) . ' ORDER BY ' . $orderBy,
                                  array( 'offset' => max( 0, (int)$offset ), 'limit' => max( 1, (int)$limit ) ) );
         return eZPersistentObject::handleRows( is_array( $rows ) ? $rows : array(), 'ticketsystemTicket', true );
     }
 
     public static function countWhere( $where )
     {
-        $rows = eZDB::instance()->arrayQuery( 'SELECT COUNT(*) AS n FROM ticketsystem_ticket WHERE ' . $where );
+        $rows = eZDB::instance()->arrayQuery( 'SELECT COUNT(*) AS n FROM ticketsystem_ticket' . self::whereSql( $where ) );
         return is_array( $rows ) && $rows ? (int)$rows[0]['n'] : 0;
     }
 

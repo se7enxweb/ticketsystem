@@ -13,19 +13,48 @@ $ViewList = array();
 // the help desk: the user's tickets, a new ticket, one ticket with its posts
 // (the views check their policy themselves, ticketsystemView::guard(): a visitor who is not signed in goes to the
 // sign-in page and comes back, instead of reading "Access denied")
+// In the administration they belong to the tab TicketSystem (ezticketsystemnavigationpart, settings/menu.ini).
+// Filters are view parameters, never GET parameters (ticketsystemDesk::filter()).
 $ViewList['list'] = array(
     'script' => 'list.php',
-    'default_navigation_part' => 'ezmynavigationpart',
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
     'params' => array(),
-    'unordered_params' => array( 'status' => 'Status', 'offset' => 'Offset' ) );
+    'unordered_params' => array( 'status' => 'status', 'offset' => 'offset', 'q' => 'q', 'priority' => 'priority', 'category' => 'category',
+                                 'reply' => 'reply', 'assignee' => 'assignee', 'sla' => 'sla', 'account' => 'account',
+                                 'subscription' => 'subscription', 'sort' => 'sort', 'order' => 'order' ) );
 $ViewList['new'] = array(
     'script' => 'new.php',
-    'default_navigation_part' => 'ezmynavigationpart',
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
     'params' => array() );
 $ViewList['view'] = array(
     'script' => 'view.php',
-    'default_navigation_part' => 'ezmynavigationpart',
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
     'params' => array( 'Number' ) );
+// 1.1: a file of a ticket (readers of the ticket; a file of an internal note: staff only)
+$ViewList['file'] = array(
+    'script' => 'file.php',
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
+    'params' => array( 'AttachmentID' ) );
+// 1.1: the staff pages (ticketsystem/manage; reports and search: ticketsystem/report)
+$ViewList['search'] = array(
+    'script' => 'search.php',
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
+    'params' => array(),
+    'unordered_params' => array( 'q' => 'q', 'offset' => 'offset' ) );
+$ViewList['reports'] = array(
+    'script' => 'reports.php',
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
+    'params' => array(),
+    'unordered_params' => array( 'days' => 'days', 'format' => 'format' ) );
+$ViewList['canned'] = array(
+    'script' => 'canned.php',
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
+    'params' => array(),
+    'unordered_params' => array( 'edit' => 'edit' ) );
+$ViewList['settings'] = array(
+    'script' => 'settings.php',
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
+    'params' => array( 'Section' ) );
 // the original list of ticketsystem 1.x (the folder [TicketSettings] TicketNodeID)
 $ViewList['tickets'] = array(
     'script' => 'tickets.php',
@@ -45,6 +74,8 @@ $FunctionList['read'] = array( 'Scope' => $Scope );
 $FunctionList['reply'] = array( 'Scope' => $Scope );
 $FunctionList['create'] = array();
 $FunctionList['manage'] = array();
+// 1.1: reports, the CSV export and the staff search (within the read scope)
+$FunctionList['report'] = array();
 // the functions of ticketsystem 1.x, kept for the roles that use them
 $FunctionList['use'] = array();
 $FunctionList['deligate'] = array();

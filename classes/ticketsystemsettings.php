@@ -108,4 +108,16 @@ class ticketsystemSettings
     {
         return max( 0, (int)$this->value( 'LimitSettings', $name, $default ) );
     }
+
+    /** The rank of a priority in the order of the settings (1 = the first, low; 0 = unknown), for sorting. */
+    public function priorityRank( $priority )
+    {
+        $i = array_search( (string)$priority, array_map( 'strval', array_keys( $this->priorities() ) ), true );
+        return $i === false ? 0 : $i + 1;
+    }
+
+    public function enabled( $block, $name, $default = 'enabled' )
+    {
+        return (string)$this->value( $block, $name, $default ) === 'enabled';
+    }
 }

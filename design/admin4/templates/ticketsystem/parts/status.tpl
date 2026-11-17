@@ -1,0 +1,1 @@
+{* A status as an administration badge. Input: $label, $tone (ok, warn, bad, info, muted). *}<span class="a4-badge{if $tone|eq( 'ok' )} is-ok{elseif $tone|eq( 'warn' )} is-warn{elseif $tone|eq( 'bad' )} is-bad{elseif $tone|eq( 'info' )} is-info{/if}">{$label|i18n( 'extension/ticketsystem' )|wash}</span>

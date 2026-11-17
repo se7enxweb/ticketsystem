@@ -1,4 +1,4 @@
--- ticketsystem (the help desk): the tables ticketsystem_ticket and ticketsystem_counter (oracle).
+-- ticketsystem (the help desk): its tables on oracle.
 -- Generated from ticketsystemSchema::definition() by bin/php/install.php --write-schema-files with the kernel's
 -- schema handler; bin/php/install.php creates the same tables in a running installation.
 
@@ -32,6 +32,24 @@ CREATE TABLE ticketsystem_ticket (
   modified INTEGER DEFAULT 0 NOT NULL,
   resolved INTEGER DEFAULT 0 NOT NULL,
   closed INTEGER DEFAULT 0 NOT NULL,
+  priority_rank INTEGER DEFAULT 0 NOT NULL,
+  assignee_id INTEGER DEFAULT 0 NOT NULL,
+  assigned INTEGER DEFAULT 0 NOT NULL,
+  source VARCHAR2(16) DEFAULT 'web',
+  external_id VARCHAR2(64),
+  sla_level VARCHAR2(32),
+  response_due INTEGER DEFAULT 0 NOT NULL,
+  resolve_due INTEGER DEFAULT 0 NOT NULL,
+  responded INTEGER DEFAULT 0 NOT NULL,
+  paused_since INTEGER DEFAULT 0 NOT NULL,
+  escalation INTEGER DEFAULT 0 NOT NULL,
+  escalated INTEGER DEFAULT 0 NOT NULL,
+  breached INTEGER DEFAULT 0 NOT NULL,
+  rating INTEGER DEFAULT 0 NOT NULL,
+  rating_comment VARCHAR2(1000),
+  rated INTEGER DEFAULT 0 NOT NULL,
+  note_count INTEGER DEFAULT 0 NOT NULL,
+  attachment_count INTEGER DEFAULT 0 NOT NULL,
   PRIMARY KEY ( id )
 );
 
@@ -43,6 +61,10 @@ END;
 /
 
 CREATE INDEX ticketsystem_ticket_account ON ticketsystem_ticket ( account_key, status );
+
+CREATE INDEX ticketsystem_ticket_assignee ON ticketsystem_ticket ( assignee_id, status );
+
+CREATE INDEX ticketsystem_ticket_escal ON ticketsystem_ticket ( escalation, status );
 
 CREATE UNIQUE INDEX ticketsystem_ticket_number ON ticketsystem_ticket ( "NUMBER" );
 
@@ -58,4 +80,203 @@ CREATE TABLE ticketsystem_counter (
   last_value INTEGER DEFAULT 0 NOT NULL,
   PRIMARY KEY ( prefix, year )
 );
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE se_ticketsystem_note';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE ticketsystem_note (
+  id INTEGER NOT NULL,
+  ticket_id INTEGER DEFAULT 0 NOT NULL,
+  author_id INTEGER DEFAULT 0 NOT NULL,
+  body CLOB,
+  created INTEGER DEFAULT 0 NOT NULL,
+  attachment_count INTEGER DEFAULT 0 NOT NULL,
+  PRIMARY KEY ( id )
+);
+
+CREATE OR REPLACE TRIGGER ticketsystem_note_id_tr
+BEFORE INSERT ON ticketsystem_note FOR EACH ROW WHEN (new.id IS NULL)
+BEGIN
+  SELECT se_ticketsystem_note.nextval INTO :new.id FROM dual;
+END;
+/
+
+CREATE INDEX ticketsystem_note_ticket ON ticketsystem_note ( ticket_id );
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE se_ticketsystem_event';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE ticketsystem_event (
+  id INTEGER NOT NULL,
+  ticket_id INTEGER DEFAULT 0 NOT NULL,
+  actor_id INTEGER DEFAULT 0 NOT NULL,
+  kind VARCHAR2(32),
+  old_value VARCHAR2(255),
+  new_value VARCHAR2(255),
+  created INTEGER DEFAULT 0 NOT NULL,
+  PRIMARY KEY ( id )
+);
+
+CREATE OR REPLACE TRIGGER ticketsystem_event_id_tr
+BEFORE INSERT ON ticketsystem_event FOR EACH ROW WHEN (new.id IS NULL)
+BEGIN
+  SELECT se_ticketsystem_event.nextval INTO :new.id FROM dual;
+END;
+/
+
+CREATE INDEX ticketsystem_event_kind ON ticketsystem_event ( kind, created );
+
+CREATE INDEX ticketsystem_event_ticket ON ticketsystem_event ( ticket_id, created );
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE se_ticketsystem_canned';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE ticketsystem_canned (
+  id INTEGER NOT NULL,
+  title VARCHAR2(200),
+  body CLOB,
+  category VARCHAR2(64),
+  set_status VARCHAR2(32),
+  set_priority VARCHAR2(32),
+  assign_self INTEGER DEFAULT 0 NOT NULL,
+  owner_id INTEGER DEFAULT 0 NOT NULL,
+  created_by INTEGER DEFAULT 0 NOT NULL,
+  created INTEGER DEFAULT 0 NOT NULL,
+  modified INTEGER DEFAULT 0 NOT NULL,
+  use_count INTEGER DEFAULT 0 NOT NULL,
+  PRIMARY KEY ( id )
+);
+
+CREATE OR REPLACE TRIGGER ticketsystem_canned_id_tr
+BEFORE INSERT ON ticketsystem_canned FOR EACH ROW WHEN (new.id IS NULL)
+BEGIN
+  SELECT se_ticketsystem_canned.nextval INTO :new.id FROM dual;
+END;
+/
+
+CREATE INDEX ticketsystem_canned_owner ON ticketsystem_canned ( owner_id );
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE se_ticketsystem_attachment';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE ticketsystem_attachment (
+  id INTEGER NOT NULL,
+  ticket_id INTEGER DEFAULT 0 NOT NULL,
+  post_id INTEGER DEFAULT 0 NOT NULL,
+  note_id INTEGER DEFAULT 0 NOT NULL,
+  uploader_id INTEGER DEFAULT 0 NOT NULL,
+  name VARCHAR2(255),
+  mime VARCHAR2(128),
+  filesize INTEGER DEFAULT 0 NOT NULL,
+  sha256 VARCHAR2(64),
+  storage_key VARCHAR2(128),
+  created INTEGER DEFAULT 0 NOT NULL,
+  PRIMARY KEY ( id )
+);
+
+CREATE OR REPLACE TRIGGER ticketsystem_attachment_id_tr
+BEFORE INSERT ON ticketsystem_attachment FOR EACH ROW WHEN (new.id IS NULL)
+BEGIN
+  SELECT se_ticketsystem_attachment.nextval INTO :new.id FROM dual;
+END;
+/
+
+CREATE INDEX ticketsystem_attach_ticket ON ticketsystem_attachment ( ticket_id );
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE se_ticketsystem_post';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE ticketsystem_post (
+  id INTEGER NOT NULL,
+  ticket_id INTEGER DEFAULT 0 NOT NULL,
+  object_id INTEGER DEFAULT 0 NOT NULL,
+  author_id INTEGER DEFAULT 0 NOT NULL,
+  is_staff INTEGER DEFAULT 0 NOT NULL,
+  created INTEGER DEFAULT 0 NOT NULL,
+  body CLOB,
+  PRIMARY KEY ( id )
+);
+
+CREATE OR REPLACE TRIGGER ticketsystem_post_id_tr
+BEFORE INSERT ON ticketsystem_post FOR EACH ROW WHEN (new.id IS NULL)
+BEGIN
+  SELECT se_ticketsystem_post.nextval INTO :new.id FROM dual;
+END;
+/
+
+CREATE UNIQUE INDEX ticketsystem_post_object ON ticketsystem_post ( object_id );
+
+CREATE INDEX ticketsystem_post_ticket ON ticketsystem_post ( ticket_id );
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE se_ticketsystem_mailin';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE ticketsystem_mailin (
+  id INTEGER NOT NULL,
+  message_key VARCHAR2(64),
+  ticket_id INTEGER DEFAULT 0 NOT NULL,
+  user_id INTEGER DEFAULT 0 NOT NULL,
+  result VARCHAR2(32),
+  created INTEGER DEFAULT 0 NOT NULL,
+  PRIMARY KEY ( id )
+);
+
+CREATE OR REPLACE TRIGGER ticketsystem_mailin_id_tr
+BEFORE INSERT ON ticketsystem_mailin FOR EACH ROW WHEN (new.id IS NULL)
+BEGIN
+  SELECT se_ticketsystem_mailin.nextval INTO :new.id FROM dual;
+END;
+/
+
+CREATE UNIQUE INDEX ticketsystem_mailin_key ON ticketsystem_mailin ( message_key );
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE se_ticketsystem_import';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE ticketsystem_import (
+  id INTEGER NOT NULL,
+  source VARCHAR2(16),
+  kind VARCHAR2(16),
+  external_id VARCHAR2(64),
+  local_id INTEGER DEFAULT 0 NOT NULL,
+  created INTEGER DEFAULT 0 NOT NULL,
+  PRIMARY KEY ( id )
+);
+
+CREATE OR REPLACE TRIGGER ticketsystem_import_id_tr
+BEFORE INSERT ON ticketsystem_import FOR EACH ROW WHEN (new.id IS NULL)
+BEGIN
+  SELECT se_ticketsystem_import.nextval INTO :new.id FROM dual;
+END;
+/
+
+CREATE UNIQUE INDEX ticketsystem_import_ext ON ticketsystem_import ( source, kind, external_id );
 

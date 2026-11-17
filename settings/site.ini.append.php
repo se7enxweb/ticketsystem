@@ -6,5 +6,10 @@
 PolicyOmitList[]=ticketsystem/list
 PolicyOmitList[]=ticketsystem/new
 PolicyOmitList[]=ticketsystem/view
+PolicyOmitList[]=ticketsystem/file
+PolicyOmitList[]=ticketsystem/search
+PolicyOmitList[]=ticketsystem/reports
+PolicyOmitList[]=ticketsystem/canned
+PolicyOmitList[]=ticketsystem/settings
 
 */ ?>

@@ -1,0 +1,15 @@
+/* ticketsystem in the administration (design admin4): the one rule set the shared components (components.css) do
+   not have. The text of a post or an internal note wraps inside the thread and keeps its paragraphs. Only tokens,
+   no colour of its own, so light and dark follow the --a4-* tokens. Loaded by design.ini [StylesheetSettings]
+   BackendCSSFileList[]=modules/ticketsystem.css. */
+.a4-ticketsystem-post {
+    margin-block-start: var(--a4-space-2);
+    overflow-wrap: anywhere;
+}
+.a4-ticketsystem-post > :first-child { margin-block-start: 0; }
+.a4-ticketsystem-post > :last-child { margin-block-end: 0; }
+.a4-ticketsystem-post pre {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}

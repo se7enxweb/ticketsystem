@@ -6,7 +6,8 @@
  */
 
 /**
- * The two tables of the help desk, ticketsystem_ticket and ticketsystem_counter, defined once in the kernel's
+ * The tables of the help desk (the index of tickets, the number counter and, since 1.1, notes, history, canned
+ * replies, attachments, the post index of the search, the mail-in log and the import map), defined once in the kernel's
  * generic schema format, so the kernel's schema handler of each database creates them: MySQL, PostgreSQL, SQLite,
  * Oracle (the ezoracle extension) and MongoDB (expMongoSchema: collections with the same indexes).
  *
@@ -21,7 +22,8 @@
  */
 class ticketsystemSchema
 {
-    const TABLES = array( 'ticketsystem_ticket', 'ticketsystem_counter' );
+    const TABLES = array( 'ticketsystem_ticket', 'ticketsystem_counter', 'ticketsystem_note', 'ticketsystem_event', 'ticketsystem_canned',
+                          'ticketsystem_attachment', 'ticketsystem_post', 'ticketsystem_mailin', 'ticketsystem_import' );
 
     /** @return array generic schema (without _info) */
     public static function definition()
@@ -34,6 +36,13 @@ class ticketsystemSchema
         $index = function ()
         {
             return array( 'type' => 'non-unique', 'fields' => func_get_args() );
+        };
+        $text = array( 'type' => 'longtext', 'default' => null );
+        // a table of 1.1: an id first, then its fields; the primary key and its indexes
+        $table = function ( $name, array $fields, array $indexes )
+        {
+            return array( 'name' => $name, 'fields' => array( 'id' => array( 'type' => 'auto_increment', 'default' => false ) ) + $fields,
+                          'indexes' => array( 'PRIMARY' => array( 'type' => 'primary', 'fields' => array( 'id' ) ) ) + $indexes );
         };
         return array(
             'ticketsystem_ticket' => array(
@@ -61,6 +70,25 @@ class ticketsystemSchema
                     'modified' => $int,
                     'resolved' => $int,
                     'closed' => $int,
+                    // 1.1: assignment, SLA, rating, counts
+                    'priority_rank' => $int,
+                    'assignee_id' => $int,
+                    'assigned' => $int,
+                    'source' => array( 'length' => 16, 'type' => 'varchar', 'not_null' => '1', 'default' => 'web' ),
+                    'external_id' => $varchar( 64 ),
+                    'sla_level' => $varchar( 32 ),
+                    'response_due' => $int,
+                    'resolve_due' => $int,
+                    'responded' => $int,
+                    'paused_since' => $int,
+                    'escalation' => $int,
+                    'escalated' => $int,
+                    'breached' => $int,
+                    'rating' => $int,
+                    'rating_comment' => $varchar( 1000 ),
+                    'rated' => $int,
+                    'note_count' => $int,
+                    'attachment_count' => $int,
                 ),
                 'indexes' => array(
                     'PRIMARY' => array( 'type' => 'primary', 'fields' => array( 'id' ) ),
@@ -69,6 +97,8 @@ class ticketsystemSchema
                     'ticketsystem_ticket_account' => $index( 'account_key', 'status' ),
                     'ticketsystem_ticket_opener' => $index( 'opener_id' ),
                     'ticketsystem_ticket_status' => $index( 'status', 'modified' ),
+                    'ticketsystem_ticket_assignee' => $index( 'assignee_id', 'status' ),
+                    'ticketsystem_ticket_escal' => $index( 'escalation', 'status' ),
                 ),
             ),
             'ticketsystem_counter' => array(
@@ -82,6 +112,34 @@ class ticketsystemSchema
                     'PRIMARY' => array( 'type' => 'primary', 'fields' => array( 'prefix', 'year' ) ),
                 ),
             ),
+            'ticketsystem_note' => $table( 'ticketsystem_note', array(
+                    'ticket_id' => $int, 'author_id' => $int, 'body' => $text, 'created' => $int, 'attachment_count' => $int ),
+                array( 'ticketsystem_note_ticket' => $index( 'ticket_id' ) ) ),
+            'ticketsystem_event' => $table( 'ticketsystem_event', array(
+                    'ticket_id' => $int, 'actor_id' => $int, 'kind' => $varchar( 32 ), 'old_value' => $varchar( 255 ),
+                    'new_value' => $varchar( 255 ), 'created' => $int ),
+                array( 'ticketsystem_event_ticket' => $index( 'ticket_id', 'created' ), 'ticketsystem_event_kind' => $index( 'kind', 'created' ) ) ),
+            'ticketsystem_canned' => $table( 'ticketsystem_canned', array(
+                    'title' => $varchar( 200 ), 'body' => $text, 'category' => $varchar( 64 ), 'set_status' => $varchar( 32 ),
+                    'set_priority' => $varchar( 32 ), 'assign_self' => $int, 'owner_id' => $int, 'created_by' => $int,
+                    'created' => $int, 'modified' => $int, 'use_count' => $int ),
+                array( 'ticketsystem_canned_owner' => $index( 'owner_id' ) ) ),
+            'ticketsystem_attachment' => $table( 'ticketsystem_attachment', array(
+                    'ticket_id' => $int, 'post_id' => $int, 'note_id' => $int, 'uploader_id' => $int, 'name' => $varchar( 255 ),
+                    'mime' => $varchar( 128 ), 'filesize' => $int, 'sha256' => $varchar( 64 ), 'storage_key' => $varchar( 128 ),
+                    'created' => $int ),
+                array( 'ticketsystem_attach_ticket' => $index( 'ticket_id' ) ) ),
+            'ticketsystem_post' => $table( 'ticketsystem_post', array(
+                    'ticket_id' => $int, 'object_id' => $int, 'author_id' => $int, 'is_staff' => $int, 'created' => $int, 'body' => $text ),
+                array( 'ticketsystem_post_ticket' => $index( 'ticket_id' ),
+                       'ticketsystem_post_object' => array( 'type' => 'unique', 'fields' => array( 'object_id' ) ) ) ),
+            'ticketsystem_mailin' => $table( 'ticketsystem_mailin', array(
+                    'message_key' => $varchar( 64 ), 'ticket_id' => $int, 'user_id' => $int, 'result' => $varchar( 32 ), 'created' => $int ),
+                array( 'ticketsystem_mailin_key' => array( 'type' => 'unique', 'fields' => array( 'message_key' ) ) ) ),
+            'ticketsystem_import' => $table( 'ticketsystem_import', array(
+                    'source' => $varchar( 16 ), 'kind' => $varchar( 16 ), 'external_id' => $varchar( 64 ), 'local_id' => $int,
+                    'created' => $int ),
+                array( 'ticketsystem_import_ext' => array( 'type' => 'unique', 'fields' => array( 'source', 'kind', 'external_id' ) ) ) ),
         );
     }
 
@@ -202,7 +260,7 @@ class ticketsystemSchema
         $statements = self::sqlStatements( $engine );
         if ( !$statements )
             return null;
-        $out = "-- ticketsystem (the help desk): the tables ticketsystem_ticket and ticketsystem_counter ($engine).\n"
+        $out = "-- ticketsystem (the help desk): its tables on $engine.\n"
              . "-- Generated from ticketsystemSchema::definition() by bin/php/install.php --write-schema-files with the kernel's\n"
              . "-- schema handler; bin/php/install.php creates the same tables in a running installation.\n\n";
         foreach ( $statements as $statement )
@@ -281,5 +339,97 @@ class ticketsystemSchema
                 $errors[] = $engine . ': ' . substr( $statement, 0, 80 );
         }
         return $errors;
+    }
+
+    // ---------------------------------------------------------------------------------- 1.1: the upgrade
+
+    protected static function errorHandling( $db )
+    {
+        try
+        {
+            $mode = ( function () { return isset( $this->errorHandling ) ? $this->errorHandling : null; } )->call( $db );
+        }
+        catch ( Throwable $e )
+        {
+            $mode = null;
+        }
+        return $mode === null ? eZDB::ERROR_HANDLING_STANDARD : $mode;
+    }
+
+    /** A statement that may fail without stopping the run. */
+    public static function tryQuery( $db, $sql )
+    {
+        $before = self::errorHandling( $db );
+        $db->setErrorHandling( eZDB::ERROR_HANDLING_EXCEPTIONS );
+        try
+        {
+            $ok = $db->query( $sql ) !== false;
+        }
+        catch ( Throwable $e )
+        {
+            $ok = false;
+        }
+        $db->setErrorHandling( $before );
+        return $ok;
+    }
+
+    /** A query that may fail: its rows, or null. */
+    public static function tryArrayQuery( $db, $sql, array $params = array() )
+    {
+        $before = self::errorHandling( $db );
+        $db->setErrorHandling( eZDB::ERROR_HANDLING_EXCEPTIONS );
+        try
+        {
+            $rows = $db->arrayQuery( $sql, $params );
+        }
+        catch ( Throwable $e )
+        {
+            $rows = null;
+        }
+        $db->setErrorHandling( $before );
+        return is_array( $rows ) ? $rows : null;
+    }
+
+    /** Whether a column exists (always on MongoDB: a document gets its fields when it is written). */
+    public static function hasColumn( $db, $table, $column )
+    {
+        if ( self::engineOf( $db ) === 'mongodb' )
+            return true;
+        if ( self::engineOf( $db ) === 'oracle' && $column === 'number' )
+            $column = '"NUMBER"';
+        return self::tryArrayQuery( $db, "SELECT $column FROM $table WHERE 1 = 0" ) !== null;
+    }
+
+    /**
+     * The columns of definition() an existing table lacks (an installation of an older release), and the
+     * statements that add them and their indexes, from the engine's schema handler.
+     *
+     * @return array column => string[] statements
+     */
+    public static function missingColumns( $table, $db = null )
+    {
+        $db = $db ?: eZDB::instance();
+        $engine = self::engineOf( $db );
+        $def = self::definition();
+        if ( !isset( $def[$table] ) || $engine === 'mongodb' )
+            return array();
+        $local = array( $table => $def[$table], '_info' => array( 'format' => 'generic' ) );
+        $handler = self::handler( $engine, $local, $db );
+        if ( !$handler )
+            return array();
+        $handler->transformSchema( $local, true );
+        $out = array();
+        foreach ( $def[$table]['fields'] as $field => $fdef )
+        {
+            if ( self::hasColumn( $db, $table, $field ) )
+                continue;
+            $sql = array( rtrim( trim( (string)$handler->generateAddFieldSql( $table, $field, $local[$table]['fields'][$field], array() ) ), ';' ) );
+            // the indexes that need the new column; the last argument: "embedded" on MySQL/SQLite, "with closure" else
+            foreach ( $local[$table]['indexes'] as $name => $idef )
+                if ( $idef['type'] !== 'primary' && end( $idef['fields'] ) === $field || ( $idef['type'] !== 'primary' && $idef['fields'][0] === $field ) )
+                    $sql[] = rtrim( trim( (string)$handler->generateAddIndexSql( $table, $name, $idef, array(), !in_array( $engine, array( 'mysql', 'sqlite' ), true ) ) ), ';' );
+            $out[$field] = array_values( array_unique( array_filter( $sql ) ) );
+        }
+        return $out;
     }
 }

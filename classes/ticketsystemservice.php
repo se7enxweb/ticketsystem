@@ -38,7 +38,7 @@ class ticketsystemService
     public static $publishing = false;
 
     /** Publishes a new object without the kernel's notification. */
-    protected static function publishNew( array $params )
+    public static function publishNew( array $params )
     {
         self::$publishing = true;
         try
@@ -168,7 +168,7 @@ class ticketsystemService
     }
 
     /** The class attributes a class has (identifier => true). */
-    protected static function classAttributes( $classIdentifier )
+    public static function classAttributes( $classIdentifier )
     {
         $class = eZContentClass::fetchByIdentifier( $classIdentifier );
         $out = array();
@@ -245,16 +245,32 @@ class ticketsystemService
             return self::fail( 'The ticket could not be saved. Please try again.' );
         }
         $now = time();
+        $sla = new ticketsystemSla( $this->settings );
+        $level = $sla->enabled() ? $sla->levelFor( $accountKey, $v['subscription_id'], $v['priority'] ) : array( 'level' => '', 'fallback' => '' );
+        list( $responseDue, $resolveDue ) = $sla->enabled() ? $sla->dues( $now, $level['level'], $v['priority'], $level['fallback'] ) : array( 0, 0 );
+        $files = isset( $in['files'] ) ? (array)$in['files'] : array();
         $ticket = ticketsystemTicket::create( array(
             'contentobject_id' => (int)$object->attribute( 'id' ), 'node_id' => (int)$object->attribute( 'main_node_id' ),
             'number' => $number, 'prefix' => $prefix, 'year' => $year, 'seq' => $seq,
             'account_key' => $accountKey, 'opener_id' => $uid, 'subject' => $v['subject'],
             'status' => $status, 'category' => $v['category'], 'priority' => $v['priority'],
+            'priority_rank' => $this->settings->priorityRank( $v['priority'] ),
             'subscription_id' => $v['subscription_id'], 'post_count' => 1, 'last_post' => $now, 'last_post_by' => $uid,
-            'last_post_staff' => 0, 'created' => $now, 'modified' => $now, 'resolved' => 0, 'closed' => 0 ) );
+            'last_post_staff' => 0, 'created' => $now, 'modified' => $now, 'resolved' => 0, 'closed' => 0,
+            'source' => isset( $in['source'] ) && preg_match( '/^[a-z]{1,16}$/', (string)$in['source'] ) ? (string)$in['source'] : 'web',
+            'sla_level' => (string)$level['level'], 'response_due' => $responseDue, 'resolve_due' => $resolveDue ) );
         $ticket->store();
         self::subscribe( (int)$object->attribute( 'main_node_id' ), $uid );
+        self::indexPost( $ticket, $object, $uid, false, $v['body'] );
         $db->commit();
+        if ( $files )
+        {
+            $stored = ( new ticketsystemFiles( $this->settings ) )->store( $ticket, $files, (int)$object->attribute( 'id' ), 0, $uid );
+            $ticket->setAttribute( 'attachment_count', count( $stored ) );
+            $ticket->store();
+        }
+        self::event( $ticket, $uid, 'open', '', $ticket->attribute( 'source' ) );
+        $this->autoAssign( $ticket );
         eZContentObject::clearCache( array( (int)$object->attribute( 'id' ) ) );
         $mail = $this->mailer->sendPost( $ticket, $object, $uid, true, $this->access->isStaff() );
         return array( 'ok' => true, 'message' => sprintf( 'Ticket %s is open. We sent you a copy by e-mail.', $number ), 'errors' => array(),
@@ -268,7 +284,7 @@ class ticketsystemService
      * @param string $body
      * @param string $status staff only: the status the ticket gets ('' = the set's StaffReply)
      */
-    public function reply( ticketsystemTicket $t, $body, $status = '' )
+    public function reply( ticketsystemTicket $t, $body, $status = '', array $files = array(), $cannedId = 0 )
     {
         if ( !$this->access->canReply( $t ) )
             return self::fail( 'You cannot reply to this ticket.' );
@@ -277,6 +293,9 @@ class ticketsystemService
             return self::fail( 'Please check the form.', $errors );
         $staff = $this->access->isStaff() && !$this->isCustomerOf( $t );
         $set = $this->settings->statusSet();
+        $canned = $staff && (int)$cannedId > 0 ? $this->cannedFor( (int)$cannedId ) : null;
+        if ( $canned && (string)$canned->attribute( 'set_status' ) !== '' && (string)$status === '' )
+            $status = (string)$canned->attribute( 'set_status' );
         $next = $set->afterPost( (string)$t->attribute( 'status' ), $staff, $staff ? (string)$status : '' );
         if ( $next === null )
             return self::fail( 'This ticket is closed. Please open a new ticket and mention its number.' );
@@ -298,15 +317,35 @@ class ticketsystemService
             return self::fail( 'The reply could not be saved. Please try again.' );
         }
         $now = time();
+        $before = (string)$t->attribute( 'status' );
         $t->setAttribute( 'post_count', $count );
         $t->setAttribute( 'last_post', $now );
         $t->setAttribute( 'last_post_by', $uid );
         $t->setAttribute( 'last_post_staff', $staff ? 1 : 0 );
         $t->setAttribute( 'modified', $now );
+        if ( $staff && !(int)$t->attribute( 'responded' ) )
+            $t->setAttribute( 'responded', $now );
+        if ( $staff && !(int)$t->attribute( 'assignee_id' ) && $this->settings->value( 'AssignmentSettings', 'ClaimOnReply', 'enabled' ) === 'enabled' )
+        {
+            $t->setAttribute( 'assignee_id', $uid );
+            $t->setAttribute( 'assigned', $now );
+            self::event( $t, $uid, 'claim', '0', (string)$uid );
+        }
         $this->applyStatus( $t, $next, $now );
         $t->store();
         self::subscribe( (int)$t->attribute( 'node_id' ), $uid );
+        self::indexPost( $t, $post, $uid, $staff, $body );
         $db->commit();
+        if ( $files )
+        {
+            $stored = ( new ticketsystemFiles( $this->settings ) )->store( $t, $files, (int)$post->attribute( 'id' ), 0, $uid );
+            $t->setAttribute( 'attachment_count', (int)$t->attribute( 'attachment_count' ) + count( $stored ) );
+            $t->store();
+        }
+        if ( $next !== $before )
+            self::event( $t, $uid, 'status', $before, $next );
+        if ( $canned )
+            $this->applyCannedActions( $t, $canned );
         $this->syncStateAttribute( $t );
         eZContentObject::clearCache( array( (int)$t->attribute( 'contentobject_id' ), (int)$post->attribute( 'id' ) ) );
         $mail = $this->mailer->sendPost( $t, $post, $uid, false, $staff );
@@ -345,6 +384,7 @@ class ticketsystemService
         $this->applyStatus( $t, $next, $now );
         $t->setAttribute( 'modified', $now );
         $t->store();
+        self::event( $t, $this->access->userId(), 'status', $current, $next );
         $this->syncStateAttribute( $t );
         return array( 'ok' => true, 'message' => sprintf( 'The ticket is now: %s.', $set->label( $next ) ), 'errors' => array() );
     }
@@ -353,6 +393,9 @@ class ticketsystemService
     protected function applyStatus( ticketsystemTicket $t, $status, $now )
     {
         $set = $this->settings->statusSet();
+        $sla = new ticketsystemSla( $this->settings );
+        foreach ( $sla->onStatus( $t->values(), (string)$t->attribute( 'status' ), (string)$status, $now, $set->isDone( $status ) ) as $k => $v )
+            $t->setAttribute( $k, $v );
         $t->setAttribute( 'status', $status );
         $t->setAttribute( 'resolved', $set->isDone( $status ) && !$set->isClosed( $status ) ? $now : ( $set->isDone( $status ) ? (int)$t->attribute( 'resolved' ) : 0 ) );
         $t->setAttribute( 'closed', $set->isClosed( $status ) ? $now : 0 );
@@ -465,5 +508,582 @@ class ticketsystemService
                           'AsObject' => true ), (int)$t->attribute( 'node_id' ) ) as $child )
                 $out[] = $row( $child->attribute( 'object' ), 'comment', false );
         return $out;
+    }
+
+    // ------------------------------------------------------------------------------------------- 1.1: history
+
+    /** Records one change of a ticket (ticketsystem_event). Values are identifiers or ids only. */
+    public static function event( ticketsystemTicket $t, $actorId, $kind, $old = '', $new = '' )
+    {
+        $e = ticketsystemEvent::make( array( 'ticket_id' => (int)$t->attribute( 'id' ), 'actor_id' => (int)$actorId, 'kind' => (string)$kind,
+                                             'old_value' => mb_substr( (string)$old, 0, 255 ), 'new_value' => mb_substr( (string)$new, 0, 255 ),
+                                             'created' => time() ) );
+        $e->store();
+        return $e;
+    }
+
+    /** The history of a ticket for staff, oldest first: kind, actor, old, new, created (labels resolved). */
+    public function history( ticketsystemTicket $t )
+    {
+        if ( !$this->access->isStaff() || !$this->access->canRead( $t ) )
+            return array();
+        $set = $this->settings->statusSet();
+        $prios = $this->settings->priorities();
+        $cats = $this->settings->categories();
+        $names = array();
+        $name = function ( $id ) use ( &$names ) {
+            $id = (int)$id;
+            if ( $id <= 0 )
+                return '';
+            if ( !isset( $names[$id] ) )
+            {
+                $o = eZContentObject::fetch( $id );
+                $names[$id] = $o ? (string)$o->attribute( 'name' ) : '#' . $id;
+            }
+            return $names[$id];
+        };
+        $label = function ( $kind, $v ) use ( $set, $prios, $cats, $name ) {
+            switch ( $kind )
+            {
+                case 'status': return $set->label( $v );
+                case 'priority': return isset( $prios[$v] ) ? $prios[$v] : $v;
+                case 'category': return isset( $cats[$v] ) ? $cats[$v] : $v;
+                case 'assign': case 'claim': case 'unassign': return $name( $v );
+                default: return (string)$v;
+            }
+        };
+        $out = array();
+        foreach ( ticketsystemEvent::fetchBy( array( 'ticket_id' => (int)$t->attribute( 'id' ) ), array( 'created' => 'asc', 'id' => 'asc' ), 0, 500 ) as $e )
+        {
+            $k = (string)$e->attribute( 'kind' );
+            $out[] = array( 'kind' => $k, 'actor' => $name( $e->attribute( 'actor_id' ) ), 'created' => (int)$e->attribute( 'created' ),
+                            'old' => $label( $k, (string)$e->attribute( 'old_value' ) ), 'new' => $label( $k, (string)$e->attribute( 'new_value' ) ) );
+        }
+        return $out;
+    }
+
+    // ---------------------------------------------------------------------------------------- 1.1: search index
+
+    /** Keeps the text of a customer-visible post for the staff search (never a note). */
+    public static function indexPost( ticketsystemTicket $t, eZContentObject $post, $authorId, $isStaff, $text )
+    {
+        $have = ticketsystemPostIndex::fetchBy( array( 'object_id' => (int)$post->attribute( 'id' ) ) );
+        $row = $have ? $have[0] : ticketsystemPostIndex::make( array( 'object_id' => (int)$post->attribute( 'id' ) ) );
+        $row->setAttribute( 'ticket_id', (int)$t->attribute( 'id' ) );
+        $row->setAttribute( 'author_id', (int)$authorId );
+        $row->setAttribute( 'is_staff', $isStaff ? 1 : 0 );
+        $row->setAttribute( 'created', (int)$post->attribute( 'published' ) ?: time() );
+        $row->setAttribute( 'body', mb_substr( (string)$text, 0, 50000 ) );
+        $row->store();
+    }
+
+    // ------------------------------------------------------------------------------------ 1.1: assignment
+
+    /**
+     * The members of [AssignmentSettings] StaffGroup who can be assigned: user id => name, enabled users only.
+     */
+    public function staffMembers()
+    {
+        static $cache = array();
+        $group = (string)$this->settings->value( 'AssignmentSettings', 'StaffGroup', 'Technical Support Group' );
+        if ( isset( $cache[$group] ) )
+            return $cache[$group];
+        $out = array();
+        $root = (int)eZINI::instance( 'content.ini' )->variable( 'NodeSettings', 'UserRootNode' );
+        $groups = eZContentObjectTreeNode::subTreeByNodeID( array( 'ClassFilterType' => 'include', 'ClassFilterArray' => array( 'user_group' ),
+                                                                   'Limitation' => array(), 'IgnoreVisibility' => true,
+                                                                   'AttributeFilter' => array( array( 'name', '=', $group ) ) ), $root );
+        foreach ( (array)$groups as $g )
+            foreach ( (array)eZContentObjectTreeNode::subTreeByNodeID( array( 'ClassFilterType' => 'include', 'ClassFilterArray' => array( 'user' ),
+                                                                               'Limitation' => array(), 'IgnoreVisibility' => true ), (int)$g->attribute( 'node_id' ) ) as $n )
+            {
+                $u = eZUser::fetch( (int)$n->attribute( 'contentobject_id' ) );
+                if ( $u instanceof eZUser && $u->isEnabled() )
+                    $out[(int)$n->attribute( 'contentobject_id' )] = (string)$n->attribute( 'name' );
+            }
+        asort( $out );
+        return $cache[$group] = $out;
+    }
+
+    /** Whether a user may be assigned tickets: staff (ticketsystem/manage) and able to read the ticket. */
+    protected function assignable( ticketsystemTicket $t, $userId )
+    {
+        $u = eZUser::fetch( (int)$userId );
+        if ( !$u instanceof eZUser || !$u->isEnabled() )
+            return false;
+        $a = new ticketsystemAccess( $u );
+        return $a->isStaff() && $a->canRead( $t );
+    }
+
+    /**
+     * Assigns a ticket (staff only): to a staff member, to oneself ("claim", $userId = 0 or one's own id), or to
+     * nobody ($userId = -1).
+     */
+    public function assign( ticketsystemTicket $t, $userId )
+    {
+        if ( !$this->access->isStaff() || !$this->access->canRead( $t ) )
+            return self::fail( 'You cannot assign this ticket.' );
+        $me = $this->access->userId();
+        $userId = (int)$userId === 0 ? $me : (int)$userId;
+        $old = (int)$t->attribute( 'assignee_id' );
+        if ( $userId < 0 )
+        {
+            if ( !$old )
+                return array( 'ok' => true, 'message' => 'Nothing changed.', 'errors' => array() );
+            $t->setAttribute( 'assignee_id', 0 );
+            $t->setAttribute( 'assigned', 0 );
+            $t->setAttribute( 'modified', time() );
+            $t->store();
+            self::event( $t, $me, 'unassign', (string)$old, '0' );
+            return array( 'ok' => true, 'message' => 'The ticket is not assigned to anyone now.', 'errors' => array() );
+        }
+        if ( $userId === $old )
+            return array( 'ok' => true, 'message' => 'Nothing changed.', 'errors' => array() );
+        if ( !$this->assignable( $t, $userId ) )
+            return self::fail( 'This person cannot work on tickets.' );
+        $t->setAttribute( 'assignee_id', $userId );
+        $t->setAttribute( 'assigned', time() );
+        $t->setAttribute( 'modified', time() );
+        $t->store();
+        self::event( $t, $me, $userId === $me ? 'claim' : 'assign', (string)$old, (string)$userId );
+        if ( $userId !== $me )
+        {
+            self::subscribe( (int)$t->attribute( 'node_id' ), $userId );
+            $this->mailer->sendNotice( $t, $userId, 'assigned' );
+        }
+        else
+            self::subscribe( (int)$t->attribute( 'node_id' ), $userId );
+        return array( 'ok' => true, 'message' => $userId === $me ? 'You took the ticket.' : 'The ticket was assigned.', 'errors' => array() );
+    }
+
+    /**
+     * Round-robin for a new ticket of a queue with [AssignmentSettings] AutoAssign[<category>]=enabled: the staff
+     * member with the fewest active assigned tickets, on a tie the one whose last assignment is oldest.
+     */
+    public function autoAssign( ticketsystemTicket $t )
+    {
+        $auto = (array)$this->settings->value( 'AssignmentSettings', 'AutoAssign', array() );
+        $cat = (string)$t->attribute( 'category' );
+        if ( !isset( $auto[$cat] ) || $auto[$cat] !== 'enabled' || (int)$t->attribute( 'assignee_id' ) )
+            return 0;
+        $set = $this->settings->statusSet();
+        $quote = ticketsystemDesk::quoter();
+        $active = ticketsystemDesk::statusCondition( $set->active(), $quote );
+        $best = null;
+        foreach ( array_keys( $this->staffMembers() ) as $uid )
+        {
+            if ( !$this->assignable( $t, $uid ) )
+                continue;
+            $load = ticketsystemTicket::countWhere( 'assignee_id = ' . (int)$uid . ( $active !== '' ? ' AND ' . $active : '' ) );
+            $last = ticketsystemTicket::fetchWhere( 'assignee_id = ' . (int)$uid, 0, 1, 'assigned DESC, id DESC' );
+            $key = array( $load, $last ? (int)$last[0]->attribute( 'assigned' ) : 0, $uid );
+            if ( $best === null || $key < $best )
+                $best = $key;
+        }
+        if ( $best === null )
+            return 0;
+        $t->setAttribute( 'assignee_id', $best[2] );
+        $t->setAttribute( 'assigned', time() );
+        $t->store();
+        self::event( $t, 0, 'assign', '0', (string)$best[2] );
+        self::subscribe( (int)$t->attribute( 'node_id' ), $best[2] );
+        $this->mailer->sendNotice( $t, $best[2], 'assigned' );
+        return $best[2];
+    }
+
+    // -------------------------------------------------------------------------- 1.1: priority and queue
+
+    /** Changes the priority (staff): the index, the attribute "priority" of the ticket object, the SLA targets. */
+    public function changePriority( ticketsystemTicket $t, $priority )
+    {
+        $prios = $this->settings->priorities();
+        if ( !$this->access->isStaff() || !$this->access->canRead( $t ) || !isset( $prios[$priority] ) )
+            return self::fail( 'This change is not possible now.' );
+        $old = (string)$t->attribute( 'priority' );
+        if ( $old === (string)$priority )
+            return array( 'ok' => true, 'message' => 'Nothing changed.', 'errors' => array() );
+        $sla = new ticketsystemSla( $this->settings );
+        if ( $sla->enabled() && (string)$t->attribute( 'sla_level' ) !== '' )
+        {
+            // the new targets from the opening, plus the time the clock was paused so far
+            $lvl = $sla->levelFor( (string)$t->attribute( 'account_key' ), (int)$t->attribute( 'subscription_id' ), $priority );
+            list( $oldR, $oldS ) = $sla->dues( (int)$t->attribute( 'created' ), (string)$t->attribute( 'sla_level' ), $old );
+            list( $newR, $newS ) = $sla->dues( (int)$t->attribute( 'created' ), $lvl['level'], $priority, $lvl['fallback'] );
+            if ( !(int)$t->attribute( 'responded' ) && $newR )
+                $t->setAttribute( 'response_due', $newR + max( 0, (int)$t->attribute( 'response_due' ) - $oldR ) * ( $oldR ? 1 : 0 ) );
+            if ( $newS )
+                $t->setAttribute( 'resolve_due', $newS + max( 0, (int)$t->attribute( 'resolve_due' ) - $oldS ) * ( $oldS ? 1 : 0 ) );
+            $t->setAttribute( 'sla_level', $lvl['level'] );
+        }
+        $t->setAttribute( 'priority', (string)$priority );
+        $t->setAttribute( 'priority_rank', $this->settings->priorityRank( $priority ) );
+        $t->setAttribute( 'modified', time() );
+        $t->store();
+        self::event( $t, $this->access->userId(), 'priority', $old, (string)$priority );
+        $this->syncSelection( $t, 'priority', $prios[$priority] );
+        return array( 'ok' => true, 'message' => sprintf( 'The priority is now: %s.', $prios[$priority] ), 'errors' => array() );
+    }
+
+    /** Moves the ticket to another queue (category; staff); a queue with round-robin assigns it when it has nobody. */
+    public function changeQueue( ticketsystemTicket $t, $category )
+    {
+        $cats = $this->settings->categories();
+        if ( !$this->access->isStaff() || !$this->access->canRead( $t ) || !isset( $cats[$category] ) )
+            return self::fail( 'This change is not possible now.' );
+        $old = (string)$t->attribute( 'category' );
+        if ( $old === (string)$category )
+            return array( 'ok' => true, 'message' => 'Nothing changed.', 'errors' => array() );
+        $t->setAttribute( 'category', (string)$category );
+        $t->setAttribute( 'modified', time() );
+        $t->store();
+        self::event( $t, $this->access->userId(), 'category', $old, (string)$category );
+        $this->syncSelection( $t, 'category', $cats[$category] );
+        $this->autoAssign( $t );
+        return array( 'ok' => true, 'message' => sprintf( 'The ticket is now in the queue %s.', $cats[$category] ), 'errors' => array() );
+    }
+
+    /** Writes a label into an ezselection attribute of the ticket object when it differs and the option exists. */
+    protected function syncSelection( ticketsystemTicket $t, $identifier, $label )
+    {
+        $object = $t->contentObject();
+        $map = $object ? $object->dataMap() : array();
+        if ( !isset( $map[$identifier] ) || $map[$identifier]->attribute( 'data_type_string' ) !== 'ezselection' )
+            return;
+        if ( $this->stateText( $map[$identifier] ) === (string)$label )
+            return;
+        $content = $map[$identifier]->attribute( 'class_content' );
+        foreach ( isset( $content['options'] ) ? $content['options'] : array() as $o )
+            if ( (string)$o['name'] === (string)$label )
+            {
+                self::publishUpdate( $object, array( 'attributes' => array( $identifier => (string)$label ) ) );
+                return;
+            }
+    }
+
+    // ------------------------------------------------------------------------------------- 1.1: escalation
+
+    /** Escalates by hand (staff): level 1 or, when it is escalated already, level 2; alerts like the SLA check. */
+    public function escalate( ticketsystemTicket $t )
+    {
+        if ( !$this->access->isStaff() || !$this->access->canRead( $t ) )
+            return self::fail( 'You cannot escalate this ticket.' );
+        $old = (int)$t->attribute( 'escalation' );
+        $new = min( ticketsystemSla::BREACHED, $old + 1 );
+        if ( $new === $old )
+            return array( 'ok' => true, 'message' => 'The ticket is escalated to the highest level already.', 'errors' => array() );
+        $this->applyEscalation( $t, $new, 'manual' );
+        return array( 'ok' => true, 'message' => 'The ticket was escalated.', 'errors' => array() );
+    }
+
+    /** Sets the escalation level, records it, raises the priority when configured and sends the alert. */
+    protected function applyEscalation( ticketsystemTicket $t, $level, $why, $notify = true )
+    {
+        $old = (int)$t->attribute( 'escalation' );
+        $t->setAttribute( 'escalation', (int)$level );
+        $t->setAttribute( 'escalated', time() );
+        $t->store();
+        self::event( $t, $why === 'manual' ? $this->access->userId() : 0, 'escalate', (string)$old, $level . ':' . $why );
+        if ( $this->settings->enabled( 'SLASettings', 'RaisePriority', 'disabled' ) )
+        {
+            $keys = array_keys( $this->settings->priorities() );
+            $i = array_search( (string)$t->attribute( 'priority' ), $keys, true );
+            if ( $i !== false && $i + 1 < count( $keys ) )
+            {
+                $t->setAttribute( 'priority', $keys[$i + 1] );
+                $t->setAttribute( 'priority_rank', $i + 2 );
+                $t->store();
+                self::event( $t, 0, 'priority', $keys[$i], $keys[$i + 1] );
+            }
+        }
+        if ( $notify )
+            $this->mailer->sendAlert( $t, (int)$level, $why, $this->alertRecipients( $t ) );
+    }
+
+    /** The user ids an alert goes to: the assignee, else the staff group (AlertStaffGroup). */
+    public function alertRecipients( ticketsystemTicket $t )
+    {
+        if ( (int)$t->attribute( 'assignee_id' ) > 0 )
+            return array( (int)$t->attribute( 'assignee_id' ) );
+        return $this->settings->enabled( 'SLASettings', 'AlertStaffGroup' ) ? array_keys( $this->staffMembers() ) : array();
+    }
+
+    /**
+     * The SLA check of the cronjob: every active ticket with a target, escalated at WarnPercent and when a target is
+     * missed; breach flags kept. Runs as the cronjob (no access checks); the alerts are mailed.
+     *
+     * @return array checked, warned, breached
+     */
+    public static function slaRun( ?ticketsystemSettings $settings = null, $now = null, $dryRun = false, $notify = true, ?ticketsystemService $service = null )
+    {
+        $settings = $settings ?: ticketsystemSettings::instance();
+        $sla = new ticketsystemSla( $settings );
+        $out = array( 'checked' => 0, 'warned' => 0, 'breached' => 0 );
+        if ( !$sla->enabled() )
+            return $out;
+        $now = $now === null ? time() : (int)$now;
+        $set = $settings->statusSet();
+        $where = ticketsystemDesk::statusCondition( $set->active(), ticketsystemDesk::quoter() );
+        $where = ( $where !== '' ? $where . ' AND ' : '' ) . '( response_due > 0 OR resolve_due > 0 ) AND escalation < 2';
+        if ( !$service )
+        {
+            $admin = eZUser::fetch( 14 );
+            $service = new self( new ticketsystemAccess( $admin instanceof eZUser ? $admin : eZUser::currentUser() ), $settings );
+        }
+        for ( $offset = 0; ; $offset += 200 )
+        {
+            $batch = ticketsystemTicket::fetchWhere( $where, $offset, 200, 'id ASC' );
+            foreach ( $batch as $t )
+            {
+                $out['checked']++;
+                $c = $sla->check( $t->values(), $now );
+                if ( $c['breached'] !== (int)$t->attribute( 'breached' ) && !$dryRun )
+                {
+                    $t->setAttribute( 'breached', $c['breached'] );
+                    $t->store();
+                }
+                if ( !$c['raise'] )
+                    continue;
+                $out[$c['escalation'] >= ticketsystemSla::BREACHED ? 'breached' : 'warned']++;
+                if ( !$dryRun )
+                    $service->applyEscalation( $t, $c['escalation'], $c['escalation'] >= ticketsystemSla::BREACHED ? 'sla_breach' : 'sla_warn', $notify );
+            }
+            if ( count( $batch ) < 200 )
+                break;
+        }
+        return $out;
+    }
+
+    /** The SLA state of a ticket for the views (ticketsystemSla::state() plus labels). */
+    public function slaState( ticketsystemTicket $t )
+    {
+        $sla = new ticketsystemSla( $this->settings );
+        if ( !$sla->enabled() || ( !(int)$t->attribute( 'response_due' ) && !(int)$t->attribute( 'resolve_due' ) ) )
+            return null;
+        $s = $sla->state( $t->values(), time() );
+        $levels = $sla->levels();
+        $s['level'] = (string)$t->attribute( 'sla_level' );
+        $s['level_label'] = isset( $levels[$s['level']] ) ? $levels[$s['level']] : strtoupper( $s['level'] );
+        foreach ( array( 'response', 'resolution' ) as $k )
+            $s[$k]['text'] = $s[$k]['state'] === 'none' ? '' : ticketsystemDesk::left( $s[$k]['left'] );
+        return $s;
+    }
+
+    // ------------------------------------------------------------------------------------------ 1.1: notes
+
+    /**
+     * Adds an internal staff note. Notes are never shown to customers, never mailed to them, never in their exports
+     * or the search of a reader who is not staff.
+     */
+    public function addNote( ticketsystemTicket $t, $body, array $files = array() )
+    {
+        if ( !$this->access->isStaff() || !$this->access->canRead( $t ) )
+            return self::fail( 'Only support staff can write internal notes.' );
+        $body = ticketsystemText::clean( $body );
+        $max = $this->settings->limit( 'MaxNoteLength', 20000 );
+        if ( $body === '' )
+            return self::fail( 'Please write the note.', array( 'note' => 'Please write the note.' ) );
+        if ( mb_strlen( $body ) > $max )
+            return self::fail( 'Please check the form.', array( 'note' => sprintf( 'A note can be at most %d characters long.', $max ) ) );
+        $n = ticketsystemNote::make( array( 'ticket_id' => (int)$t->attribute( 'id' ), 'author_id' => $this->access->userId(),
+                                            'body' => $body, 'created' => time() ) );
+        $n->store();
+        if ( $files )
+        {
+            $stored = ( new ticketsystemFiles( $this->settings ) )->store( $t, $files, 0, (int)$n->attribute( 'id' ), $this->access->userId() );
+            $n->setAttribute( 'attachment_count', count( $stored ) );
+            $n->store();
+        }
+        $t->setAttribute( 'note_count', ticketsystemNote::countBy( array( 'ticket_id' => (int)$t->attribute( 'id' ) ) ) );
+        $t->store();
+        self::event( $t, $this->access->userId(), 'note', '', (string)$n->attribute( 'id' ) );
+        return array( 'ok' => true, 'message' => 'The internal note was saved. Customers never see it.', 'errors' => array(), 'note' => $n );
+    }
+
+    /** The internal notes of a ticket, for staff only (an empty list for everyone else). */
+    public function notes( ticketsystemTicket $t )
+    {
+        if ( !$this->access->isStaff() || !$this->access->canRead( $t ) )
+            return array();
+        $out = array();
+        foreach ( ticketsystemNote::fetchBy( array( 'ticket_id' => (int)$t->attribute( 'id' ) ), array( 'created' => 'asc', 'id' => 'asc' ), 0, 500 ) as $n )
+        {
+            $o = eZContentObject::fetch( (int)$n->attribute( 'author_id' ) );
+            $out[] = array( 'id' => (int)$n->attribute( 'id' ), 'author' => $o ? (string)$o->attribute( 'name' ) : '',
+                            'author_id' => (int)$n->attribute( 'author_id' ), 'created' => (int)$n->attribute( 'created' ),
+                            'paragraphs' => ticketsystemText::paragraphs( (string)$n->attribute( 'body' ) ) );
+        }
+        return $out;
+    }
+
+    // ---------------------------------------------------------------------------------- 1.1: attachments
+
+    /**
+     * The files of a ticket the reader may see: the files of posts for every reader, the files of notes for staff only.
+     *
+     * @return ticketsystemAttachment[]
+     */
+    public function attachments( ticketsystemTicket $t )
+    {
+        if ( !$this->access->canRead( $t ) )
+            return array();
+        $out = array();
+        foreach ( ticketsystemAttachment::fetchBy( array( 'ticket_id' => (int)$t->attribute( 'id' ) ), array( 'id' => 'asc' ), 0, 500 ) as $a )
+            if ( (int)$a->attribute( 'note_id' ) === 0 || $this->access->isStaff() )
+                $out[] = $a;
+        return $out;
+    }
+
+    /** The attachment of an id if the reader may download it, else null (also for a file of a note to a customer). */
+    public function attachment( $id )
+    {
+        $a = ticketsystemAttachment::fetchByID( (int)$id );
+        if ( !$a )
+            return null;
+        $t = ticketsystemTicket::fetch( (int)$a->attribute( 'ticket_id' ) );
+        if ( !$t || !$this->access->canRead( $t ) )
+            return null;
+        if ( (int)$a->attribute( 'note_id' ) > 0 && !$this->access->isStaff() )
+            return null;
+        return $a;
+    }
+
+    // ---------------------------------------------------------------------------------------- 1.1: rating
+
+    /** Whether the reader may rate the ticket now: a customer of it, the ticket resolved or closed, CSAT on. */
+    public function mayRate( ticketsystemTicket $t )
+    {
+        return $this->settings->enabled( 'CSATSettings', 'Enabled' ) && $this->access->canReply( $t ) && $this->isCustomerOf( $t )
+            && $this->settings->statusSet()->isDone( (string)$t->attribute( 'status' ) );
+    }
+
+    /** The customer's satisfaction rating: 1 to 5 and a comment; can be changed while the ticket is done. */
+    public function rate( ticketsystemTicket $t, $score, $comment = '' )
+    {
+        if ( !$this->mayRate( $t ) )
+            return self::fail( 'This ticket cannot be rated now.' );
+        $score = (int)$score;
+        if ( $score < 1 || $score > 5 )
+            return self::fail( 'Please choose from 1 to 5 stars.', array( 'rating' => 'Please choose from 1 to 5 stars.' ) );
+        $comment = mb_substr( trim( preg_replace( '/\s+/u', ' ', ticketsystemText::clean( $comment ) ) ), 0, 1000 );
+        $old = (int)$t->attribute( 'rating' );
+        $t->setAttribute( 'rating', $score );
+        $t->setAttribute( 'rating_comment', $comment );
+        $t->setAttribute( 'rated', time() );
+        $t->store();
+        self::event( $t, $this->access->userId(), 'rate', (string)$old, (string)$score );
+        return array( 'ok' => true, 'message' => 'Thank you for your rating.', 'errors' => array() );
+    }
+
+    // ------------------------------------------------------------------------------------ 1.1: canned replies
+
+    /** The canned replies a staff member may use: the shared ones and their own, optionally for one queue. */
+    public function cannedReplies( $category = '' )
+    {
+        if ( !$this->access->isStaff() )
+            return array();
+        $out = array();
+        foreach ( ticketsystemCannedReply::fetchBy( array(), array( 'title' => 'asc', 'id' => 'asc' ), 0, 500 ) as $c )
+        {
+            $owner = (int)$c->attribute( 'owner_id' );
+            if ( $owner !== 0 && $owner !== $this->access->userId() )
+                continue;
+            $cat = (string)$c->attribute( 'category' );
+            if ( $category !== '' && $cat !== '' && $cat !== (string)$category )
+                continue;
+            $out[] = $c;
+        }
+        return $out;
+    }
+
+    /** A canned reply the reader may use, or null. */
+    public function cannedFor( $id )
+    {
+        $c = ticketsystemCannedReply::fetchByID( (int)$id );
+        if ( !$c || !$this->access->isStaff() )
+            return null;
+        $owner = (int)$c->attribute( 'owner_id' );
+        return $owner === 0 || $owner === $this->access->userId() ? $c : null;
+    }
+
+    /**
+     * The text of a canned reply for a ticket (pure apart from the names): {number}, {subject}, {customer}
+     * (the opener's name), {agent} (the sender's name), {status}, {queue}, {priority}, {link}.
+     */
+    public function cannedText( ticketsystemCannedReply $c, ticketsystemTicket $t )
+    {
+        $opener = eZContentObject::fetch( (int)$t->attribute( 'opener_id' ) );
+        $me = eZContentObject::fetch( $this->access->userId() );
+        $cats = $this->settings->categories();
+        $prios = $this->settings->priorities();
+        return self::expand( (string)$c->attribute( 'body' ), array(
+            'number' => (string)$t->attribute( 'number' ), 'subject' => (string)$t->attribute( 'subject' ),
+            'customer' => $opener ? (string)$opener->attribute( 'name' ) : '', 'agent' => $me ? (string)$me->attribute( 'name' ) : '',
+            'status' => $this->settings->statusSet()->label( $t->attribute( 'status' ) ),
+            'queue' => isset( $cats[$t->attribute( 'category' )] ) ? $cats[$t->attribute( 'category' )] : '',
+            'priority' => isset( $prios[$t->attribute( 'priority' )] ) ? $prios[$t->attribute( 'priority' )] : '',
+            'link' => $this->mailer->ticketUrl( $t ) ) );
+    }
+
+    /** Replaces {name} placeholders (pure); unknown ones are left as they are. */
+    public static function expand( $text, array $values )
+    {
+        return preg_replace_callback( '/\{([a-z_]{2,20})\}/', function ( $m ) use ( $values ) {
+            return array_key_exists( $m[1], $values ) ? (string)$values[$m[1]] : $m[0];
+        }, (string)$text );
+    }
+
+    /** The changes a macro makes after its reply was sent: priority, assign to the sender; counts the use. */
+    protected function applyCannedActions( ticketsystemTicket $t, ticketsystemCannedReply $c )
+    {
+        if ( (string)$c->attribute( 'set_priority' ) !== '' )
+            $this->changePriority( $t, (string)$c->attribute( 'set_priority' ) );
+        if ( (int)$c->attribute( 'assign_self' ) && (int)$t->attribute( 'assignee_id' ) !== $this->access->userId() )
+            $this->assign( $t, 0 );
+        $c->setAttribute( 'use_count', (int)$c->attribute( 'use_count' ) + 1 );
+        $c->store();
+    }
+
+    /**
+     * Saves a canned reply (staff): a new one ($id 0) or one the reader owns; shared ones (owner 0) need
+     * ticketsystem/manage and the "Shared" choice.
+     */
+    public function saveCanned( $id, array $in )
+    {
+        if ( !$this->access->isStaff() )
+            return self::fail( 'Only support staff can keep canned replies.' );
+        $c = (int)$id > 0 ? $this->cannedFor( (int)$id ) : ticketsystemCannedReply::make( array( 'created_by' => $this->access->userId(), 'created' => time() ) );
+        if ( !$c )
+            return self::fail( 'This canned reply cannot be found.' );
+        $errors = array();
+        $title = trim( preg_replace( '/\s+/u', ' ', ticketsystemText::clean( isset( $in['title'] ) ? $in['title'] : '' ) ) );
+        $body = ticketsystemText::clean( isset( $in['body'] ) ? $in['body'] : '' );
+        if ( $title === '' || mb_strlen( $title ) > 200 )
+            $errors['title'] = 'Please give it a title of at most 200 characters.';
+        if ( $body === '' || mb_strlen( $body ) > $this->settings->limit( 'MaxBodyLength', 50000 ) )
+            $errors['body'] = 'Please write the text.';
+        $cat = isset( $in['category'] ) && isset( $this->settings->categories()[$in['category']] ) ? (string)$in['category'] : '';
+        $status = isset( $in['set_status'] ) && in_array( (string)$in['set_status'], $this->settings->statusSet()->staffChoices, true ) ? (string)$in['set_status'] : '';
+        $prio = isset( $in['set_priority'] ) && isset( $this->settings->priorities()[$in['set_priority']] ) ? (string)$in['set_priority'] : '';
+        if ( $errors )
+            return self::fail( 'Please check the form.', $errors );
+        $c->setAttribute( 'title', $title );
+        $c->setAttribute( 'body', $body );
+        $c->setAttribute( 'category', $cat );
+        $c->setAttribute( 'set_status', $status );
+        $c->setAttribute( 'set_priority', $prio );
+        $c->setAttribute( 'assign_self', !empty( $in['assign_self'] ) ? 1 : 0 );
+        $c->setAttribute( 'owner_id', !empty( $in['shared'] ) ? 0 : $this->access->userId() );
+        $c->setAttribute( 'modified', time() );
+        $c->store();
+        return array( 'ok' => true, 'message' => 'The canned reply was saved.', 'errors' => array(), 'canned' => $c );
+    }
+
+    public function deleteCanned( $id )
+    {
+        $c = $this->cannedFor( (int)$id );
+        if ( !$c )
+            return self::fail( 'This canned reply cannot be found.' );
+        $c->remove();
+        return array( 'ok' => true, 'message' => 'The canned reply was deleted.', 'errors' => array() );
     }
 }

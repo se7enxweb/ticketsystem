@@ -24,6 +24,9 @@ class ticketsystemChrome
     public static function forUser( eZUser $user, $view )
     {
         $mode = (string)ticketsystemSettings::instance()->value( 'ChromeSettings', 'Chrome', 'auto' );
+        // the administration (an admin design): its own page frame; the admin4 templates of the extension draw the page
+        if ( self::isAdmin() )
+            return array( 'name' => 'admin', 'variables' => array() );
         if ( $mode !== 'standard' && ticketsystemAccount::katalystAvailable()
              && class_exists( '\Exponential\View\Extension\SevenxKatalyst\Katalyst\CustomerView' ) )
         {
@@ -32,6 +35,18 @@ class ticketsystemChrome
                 return array( 'name' => 'katalyst', 'variables' => $vars );
         }
         return array( 'name' => 'standard', 'variables' => array() );
+    }
+
+    /** Whether this siteaccess is an administration (its SiteDesign or an additional design is admin*). */
+    public static function isAdmin()
+    {
+        $ini = eZINI::instance();
+        $designs = array_merge( array( (string)$ini->variable( 'DesignSettings', 'SiteDesign' ) ),
+                                $ini->hasVariable( 'DesignSettings', 'AdditionalSiteDesignList' ) ? (array)$ini->variable( 'DesignSettings', 'AdditionalSiteDesignList' ) : array() );
+        foreach ( $designs as $d )
+            if ( preg_match( '/^admin[0-9a-z]*$/', (string)$d ) )
+                return true;
+        return false;
     }
 
     /** The Katalyst console's variables, or null when the user has no customer (or something is missing). */

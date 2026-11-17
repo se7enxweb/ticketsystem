@@ -68,11 +68,15 @@ class ticketsystemView
         $vars['ts_errors'] = array_merge( $errors, $vars['ts_errors'] );
         $vars['ts_chrome'] = $chrome['name'];
         $vars['ts_view'] = $view;
+        $access = new ticketsystemAccess( $user );
+        $vars['ts_admin'] = array( 'may_create' => $access->may( 'create' ), 'is_staff' => $access->isStaff(), 'may_report' => $access->may( 'report' ),
+                                   'import' => ticketsystemSettings::instance()->enabled( 'ImportSettings', 'Enabled', 'disabled' ) );
         $vars['ts_token'] = ticketsystemFormToken::token();
         $vars['ts_token_field'] = ticketsystemFormToken::FIELD;
         foreach ( $vars as $k => $v )
             $tpl->setVariable( $k, $v );
-        return array( 'content' => $tpl->fetch( 'design:ticketsystem/' . $template . '.tpl' ), 'path' => $path );
+        return array( 'content' => $tpl->fetch( 'design:ticketsystem/' . $template . '.tpl' ), 'path' => $path,
+                      'navigation_part' => 'ezticketsystemnavigationpart' );
     }
 
     /**
@@ -91,11 +95,49 @@ class ticketsystemView
         return null;
     }
 
-    public static function path( $last = null )
+    /** The path: "Support > <page>" on the site, "TicketSystem > <page>" in the administration. */
+    public static function path( $last = null, $middle = null )
     {
-        $path = array( array( 'text' => ezpI18n::tr( 'extension/ticketsystem', 'Support' ), 'url' => $last === null ? false : 'ticketsystem/list' ) );
+        $root = ticketsystemChrome::isAdmin() ? 'TicketSystem' : ezpI18n::tr( 'extension/ticketsystem', 'Support' );
+        $path = array( array( 'text' => $root, 'url' => $last === null ? false : 'ticketsystem/list' ) );
+        if ( $middle !== null )
+            $path[] = $middle;
         if ( $last !== null )
             $path[] = array( 'text' => $last, 'url' => false );
         return $path;
+    }
+
+    /**
+     * A row of the staff desk: the list row plus the assignee's name, the waiting time, the SLA state and the badge
+     * classes of the administration.
+     */
+    public static function deskRow( ticketsystemTicket $t, array &$names, ?ticketsystemSettings $settings = null )
+    {
+        $settings = $settings ?: ticketsystemSettings::instance();
+        $r = self::row( $t, $settings );
+        $aid = (int)$t->attribute( 'assignee_id' );
+        if ( $aid && !isset( $names[$aid] ) )
+        {
+            $o = eZContentObject::fetch( $aid );
+            $names[$aid] = $o ? (string)$o->attribute( 'name' ) : '#' . $aid;
+        }
+        $sla = new ticketsystemSla( $settings );
+        $state = $sla->enabled() && ( (int)$t->attribute( 'response_due' ) || (int)$t->attribute( 'resolve_due' ) ) && !$r['done']
+               ? $sla->state( $t->values(), time() ) : null;
+        $prios = array_keys( $settings->priorities() );
+        $r += array(
+            'badge' => ticketsystemDesk::badgeClass( $r['status_tone'] ),
+            'assignee_id' => $aid, 'assignee' => $aid ? $names[$aid] : '',
+            'waiting' => ticketsystemDesk::age( (int)$t->attribute( 'last_post' ), time() ),
+            'priority_high' => $prios && array_search( $r['priority'], $prios, true ) >= max( 0, count( $prios ) - 2 ) && count( $prios ) > 2,
+            'escalation' => (int)$t->attribute( 'escalation' ),
+            'sla_state' => $state ? $state['worst'] : '', 'sla_tone' => $state ? $state['tone'] : '',
+            'sla_due' => $state ? ( $state['response']['state'] !== 'none' && $state['response']['state'] !== 'met' ? $state['response'] : $state['resolution'] ) : null,
+            'rating' => (int)$t->attribute( 'rating' ), 'note_count' => (int)$t->attribute( 'note_count' ),
+            'attachment_count' => (int)$t->attribute( 'attachment_count' ), 'source' => (string)$t->attribute( 'source' ),
+        );
+        if ( $r['sla_due'] )
+            $r['sla_due']['text'] = ticketsystemDesk::left( $r['sla_due']['left'] );
+        return $r;
     }
 }
