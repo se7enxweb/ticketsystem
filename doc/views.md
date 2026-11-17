@@ -21,3 +21,6 @@ redirects (post/redirect/get) with a one-time message.
 | `TicketSetStatus` | view | `manage` | staff set any status of `StaffChoices` |
 
 Limits: `[LimitSettings]` (subject length, message length, new tickets per user and hour).
+
+The views check their policy themselves: a visitor who is not signed in is sent to the sign-in page and back to the
+view afterwards; a signed-in user without the policy gets the kernel's "Access denied".

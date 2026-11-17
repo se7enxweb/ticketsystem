@@ -13,6 +13,8 @@
 
 /** @var eZModule $Module */
 $Module = $Params['Module'];
+if ( ( $denied = ticketsystemView::guard( $Module, 'read', '/ticketsystem/view/' . ( isset( $Params['Number'] ) ? rawurlencode( (string)$Params['Number'] ) : '' ) ) ) !== null )
+    return $denied;
 $http = eZHTTPTool::instance();
 $user = eZUser::currentUser();
 $access = new ticketsystemAccess( $user );

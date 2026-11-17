@@ -11,6 +11,8 @@
 
 /** @var eZModule $Module */
 $Module = $Params['Module'];
+if ( ( $denied = ticketsystemView::guard( $Module, 'read', '/ticketsystem/list' ) ) !== null )
+    return $denied;
 $user = eZUser::currentUser();
 $access = new ticketsystemAccess( $user );
 $settings = ticketsystemSettings::instance();

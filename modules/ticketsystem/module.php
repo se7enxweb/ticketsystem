@@ -11,18 +11,20 @@ $Module = array( 'name' => 'ticketsystem' );
 
 $ViewList = array();
 // the help desk: the user's tickets, a new ticket, one ticket with its posts
+// (the views check their policy themselves, ticketsystemView::guard(): a visitor who is not signed in goes to the
+// sign-in page and comes back, instead of reading "Access denied")
 $ViewList['list'] = array(
     'script' => 'list.php',
-    'functions' => array( 'read' ),
+    'default_navigation_part' => 'ezmynavigationpart',
     'params' => array(),
     'unordered_params' => array( 'status' => 'Status', 'offset' => 'Offset' ) );
 $ViewList['new'] = array(
     'script' => 'new.php',
-    'functions' => array( 'create' ),
+    'default_navigation_part' => 'ezmynavigationpart',
     'params' => array() );
 $ViewList['view'] = array(
     'script' => 'view.php',
-    'functions' => array( 'read' ),
+    'default_navigation_part' => 'ezmynavigationpart',
     'params' => array( 'Number' ) );
 // the original list of ticketsystem 1.x (the folder [TicketSettings] TicketNodeID)
 $ViewList['tickets'] = array(

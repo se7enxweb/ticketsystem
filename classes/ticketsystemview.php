@@ -75,6 +75,22 @@ class ticketsystemView
         return array( 'content' => $tpl->fetch( 'design:ticketsystem/' . $template . '.tpl' ), 'path' => $path );
     }
 
+    /**
+     * The policy check of a view: a visitor who is not signed in is sent to the sign-in page (and back here), a
+     * signed-in user without the policy gets the kernel's access denied. Null when the view may go on, else the
+     * module result to return.
+     */
+    public static function guard( eZModule $module, $function, $back )
+    {
+        $user = eZUser::currentUser();
+        if ( !$user->isRegistered() )
+            return $module->redirectTo( '/user/login?' . http_build_query( array( 'RedirectURI' => $back ) ) );
+        $r = $user->hasAccessTo( 'ticketsystem', $function );
+        if ( !isset( $r['accessWord'] ) || $r['accessWord'] === 'no' )
+            return $module->handleError( eZError::KERNEL_ACCESS_DENIED, 'kernel' );
+        return null;
+    }
+
     public static function path( $last = null )
     {
         $path = array( array( 'text' => ezpI18n::tr( 'extension/ticketsystem', 'Support' ), 'url' => $last === null ? false : 'ticketsystem/list' ) );

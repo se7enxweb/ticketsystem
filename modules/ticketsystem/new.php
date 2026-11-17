@@ -11,6 +11,8 @@
 
 /** @var eZModule $Module */
 $Module = $Params['Module'];
+if ( ( $denied = ticketsystemView::guard( $Module, 'create', '/ticketsystem/new' ) ) !== null )
+    return $denied;
 $http = eZHTTPTool::instance();
 $user = eZUser::currentUser();
 $access = new ticketsystemAccess( $user );
