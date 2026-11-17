@@ -5,5 +5,5 @@
  */
 foreach ( array( 'ticketsystemsettings', 'ticketsystemstatusset', 'ticketsystemnumber', 'ticketsystemtext', 'ticketsystemaccess', 'ticketsystemmailer', 'ticketsystemschema', 'ticketsystemsla', 'ticketsystemdesk',
                  'ticketsystemmailparser', 'ticketsystemreplytoken', 'ticketsystemmailin', 'ticketsystemreport', 'ticketsystemfiles', 'ticketsystemservice', 'ticketsystemwhmcsimport',
-                 'ticketsystembusinessclock', 'ticketsystemcsat' ) as $f )
+                 'ticketsystembusinessclock', 'ticketsystemcsat', 'ticketsystemtime', 'ticketsystemwatch', 'ticketsystemmerge', 'ticketsystemautoticket' ) as $f )
     require_once __DIR__ . '/../classes/' . $f . '.php';

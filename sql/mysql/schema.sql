@@ -43,6 +43,9 @@ CREATE TABLE ticketsystem_ticket (
   rated int(11) NOT NULL DEFAULT '0',
   note_count int(11) NOT NULL DEFAULT '0',
   attachment_count int(11) NOT NULL DEFAULT '0',
+  merged_into int(11) NOT NULL DEFAULT '0',
+  time_minutes int(11) NOT NULL DEFAULT '0',
+  billable_minutes int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY ( id ),
   UNIQUE KEY ticketsystem_ticket_number ( number ),
   UNIQUE KEY ticketsystem_ticket_object ( contentobject_id ),
@@ -168,5 +171,36 @@ CREATE TABLE ticketsystem_escalation (
   PRIMARY KEY ( id ),
   UNIQUE KEY ticketsystem_escal_step ( ticket_id, step_key ),
   KEY ticketsystem_escal_created ( created )
+) ENGINE=InnoDB;
+
+CREATE TABLE ticketsystem_cc (
+  id int(11) NOT NULL AUTO_INCREMENT,
+  ticket_id int(11) NOT NULL DEFAULT '0',
+  email varchar(255) NOT NULL DEFAULT '',
+  added_by int(11) NOT NULL DEFAULT '0',
+  created int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY ( id ),
+  KEY ticketsystem_cc_ticket ( ticket_id )
+) ENGINE=InnoDB;
+
+CREATE TABLE ticketsystem_time (
+  id int(11) NOT NULL AUTO_INCREMENT,
+  ticket_id int(11) NOT NULL DEFAULT '0',
+  post_id int(11) NOT NULL DEFAULT '0',
+  note_id int(11) NOT NULL DEFAULT '0',
+  user_id int(11) NOT NULL DEFAULT '0',
+  minutes int(11) NOT NULL DEFAULT '0',
+  billable int(11) NOT NULL DEFAULT '0',
+  covered varchar(32) NOT NULL DEFAULT '',
+  work_date int(11) NOT NULL DEFAULT '0',
+  remark varchar(255) NOT NULL DEFAULT '',
+  account_key varchar(64) NOT NULL DEFAULT '',
+  created int(11) NOT NULL DEFAULT '0',
+  billed int(11) NOT NULL DEFAULT '0',
+  billing_ref varchar(64) NOT NULL DEFAULT '',
+  PRIMARY KEY ( id ),
+  KEY ticketsystem_time_ticket ( ticket_id ),
+  KEY ticketsystem_time_user ( user_id, work_date ),
+  KEY ticketsystem_time_bill ( billable, billed )
 ) ENGINE=InnoDB;
 

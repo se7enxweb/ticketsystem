@@ -59,6 +59,10 @@ class ticketsystemTicket extends eZPersistentObject
                 'rated' => $int( 'Rated' ),
                 'note_count' => $int( 'NoteCount' ),
                 'attachment_count' => $int( 'AttachmentCount' ),
+                // 1.2: merge, time tracking
+                'merged_into' => $int( 'MergedInto' ),
+                'time_minutes' => $int( 'TimeMinutes' ),
+                'billable_minutes' => $int( 'BillableMinutes' ),
             ),
             'keys' => array( 'id' ),
             'increment_key' => 'id',

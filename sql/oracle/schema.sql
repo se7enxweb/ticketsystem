@@ -50,6 +50,9 @@ CREATE TABLE ticketsystem_ticket (
   rated INTEGER DEFAULT 0 NOT NULL,
   note_count INTEGER DEFAULT 0 NOT NULL,
   attachment_count INTEGER DEFAULT 0 NOT NULL,
+  merged_into INTEGER DEFAULT 0 NOT NULL,
+  time_minutes INTEGER DEFAULT 0 NOT NULL,
+  billable_minutes INTEGER DEFAULT 0 NOT NULL,
   PRIMARY KEY ( id )
 );
 
@@ -313,4 +316,67 @@ END;
 CREATE INDEX ticketsystem_escal_created ON ticketsystem_escalation ( created );
 
 CREATE UNIQUE INDEX ticketsystem_escal_step ON ticketsystem_escalation ( ticket_id, step_key );
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE se_ticketsystem_cc';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE ticketsystem_cc (
+  id INTEGER NOT NULL,
+  ticket_id INTEGER DEFAULT 0 NOT NULL,
+  email VARCHAR2(255),
+  added_by INTEGER DEFAULT 0 NOT NULL,
+  created INTEGER DEFAULT 0 NOT NULL,
+  PRIMARY KEY ( id )
+);
+
+CREATE OR REPLACE TRIGGER ticketsystem_cc_id_tr
+BEFORE INSERT ON ticketsystem_cc FOR EACH ROW WHEN (new.id IS NULL)
+BEGIN
+  SELECT se_ticketsystem_cc.nextval INTO :new.id FROM dual;
+END;
+/
+
+CREATE INDEX ticketsystem_cc_ticket ON ticketsystem_cc ( ticket_id );
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE se_ticketsystem_time';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE ticketsystem_time (
+  id INTEGER NOT NULL,
+  ticket_id INTEGER DEFAULT 0 NOT NULL,
+  post_id INTEGER DEFAULT 0 NOT NULL,
+  note_id INTEGER DEFAULT 0 NOT NULL,
+  user_id INTEGER DEFAULT 0 NOT NULL,
+  minutes INTEGER DEFAULT 0 NOT NULL,
+  billable INTEGER DEFAULT 0 NOT NULL,
+  covered VARCHAR2(32),
+  work_date INTEGER DEFAULT 0 NOT NULL,
+  remark VARCHAR2(255),
+  account_key VARCHAR2(64),
+  created INTEGER DEFAULT 0 NOT NULL,
+  billed INTEGER DEFAULT 0 NOT NULL,
+  billing_ref VARCHAR2(64),
+  PRIMARY KEY ( id )
+);
+
+CREATE OR REPLACE TRIGGER ticketsystem_time_id_tr
+BEFORE INSERT ON ticketsystem_time FOR EACH ROW WHEN (new.id IS NULL)
+BEGIN
+  SELECT se_ticketsystem_time.nextval INTO :new.id FROM dual;
+END;
+/
+
+CREATE INDEX ticketsystem_time_bill ON ticketsystem_time ( billable, billed );
+
+CREATE INDEX ticketsystem_time_ticket ON ticketsystem_time ( ticket_id );
+
+CREATE INDEX ticketsystem_time_user ON ticketsystem_time ( user_id, work_date );
 

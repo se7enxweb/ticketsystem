@@ -49,7 +49,10 @@ CREATE TABLE IF NOT EXISTS ticketsystem_ticket (
   rating_comment character varying(1000) DEFAULT ''::character varying NOT NULL,
   rated integer DEFAULT 0 NOT NULL,
   note_count integer DEFAULT 0 NOT NULL,
-  attachment_count integer DEFAULT 0 NOT NULL
+  attachment_count integer DEFAULT 0 NOT NULL,
+  merged_into integer DEFAULT 0 NOT NULL,
+  time_minutes integer DEFAULT 0 NOT NULL,
+  billable_minutes integer DEFAULT 0 NOT NULL
 );
 
 CREATE UNIQUE INDEX ticketsystem_ticket_number ON ticketsystem_ticket USING btree ( number );
@@ -260,4 +263,55 @@ CREATE UNIQUE INDEX ticketsystem_escal_step ON ticketsystem_escalation USING btr
 CREATE INDEX ticketsystem_escal_created ON ticketsystem_escalation USING btree ( created );
 
 ALTER TABLE ONLY ticketsystem_escalation ADD CONSTRAINT ticketsystem_escalation_pkey PRIMARY KEY ( id );
+
+CREATE SEQUENCE IF NOT EXISTS ticketsystem_cc_id_seq
+  START 1
+  INCREMENT 1
+  MAXVALUE 9223372036854775807
+  MINVALUE 1
+  CACHE 1;
+
+CREATE TABLE IF NOT EXISTS ticketsystem_cc (
+  id integer DEFAULT nextval('ticketsystem_cc_id_seq'::text) NOT NULL,
+  ticket_id integer DEFAULT 0 NOT NULL,
+  email character varying(255) DEFAULT ''::character varying NOT NULL,
+  added_by integer DEFAULT 0 NOT NULL,
+  created integer DEFAULT 0 NOT NULL
+);
+
+CREATE INDEX ticketsystem_cc_ticket ON ticketsystem_cc USING btree ( ticket_id );
+
+ALTER TABLE ONLY ticketsystem_cc ADD CONSTRAINT ticketsystem_cc_pkey PRIMARY KEY ( id );
+
+CREATE SEQUENCE IF NOT EXISTS ticketsystem_time_id_seq
+  START 1
+  INCREMENT 1
+  MAXVALUE 9223372036854775807
+  MINVALUE 1
+  CACHE 1;
+
+CREATE TABLE IF NOT EXISTS ticketsystem_time (
+  id integer DEFAULT nextval('ticketsystem_time_id_seq'::text) NOT NULL,
+  ticket_id integer DEFAULT 0 NOT NULL,
+  post_id integer DEFAULT 0 NOT NULL,
+  note_id integer DEFAULT 0 NOT NULL,
+  user_id integer DEFAULT 0 NOT NULL,
+  minutes integer DEFAULT 0 NOT NULL,
+  billable integer DEFAULT 0 NOT NULL,
+  covered character varying(32) DEFAULT ''::character varying NOT NULL,
+  work_date integer DEFAULT 0 NOT NULL,
+  remark character varying(255) DEFAULT ''::character varying NOT NULL,
+  account_key character varying(64) DEFAULT ''::character varying NOT NULL,
+  created integer DEFAULT 0 NOT NULL,
+  billed integer DEFAULT 0 NOT NULL,
+  billing_ref character varying(64) DEFAULT ''::character varying NOT NULL
+);
+
+CREATE INDEX ticketsystem_time_ticket ON ticketsystem_time USING btree ( ticket_id );
+
+CREATE INDEX ticketsystem_time_user ON ticketsystem_time USING btree ( user_id, work_date );
+
+CREATE INDEX ticketsystem_time_bill ON ticketsystem_time USING btree ( billable, billed );
+
+ALTER TABLE ONLY ticketsystem_time ADD CONSTRAINT ticketsystem_time_pkey PRIMARY KEY ( id );
 

@@ -24,7 +24,7 @@ class ticketsystemSchema
 {
     const TABLES = array( 'ticketsystem_ticket', 'ticketsystem_counter', 'ticketsystem_note', 'ticketsystem_event', 'ticketsystem_canned',
                           'ticketsystem_attachment', 'ticketsystem_post', 'ticketsystem_mailin', 'ticketsystem_import',
-                          'ticketsystem_escalation' );
+                          'ticketsystem_escalation', 'ticketsystem_cc', 'ticketsystem_time' );
 
     /** @return array generic schema (without _info) */
     public static function definition()
@@ -90,6 +90,10 @@ class ticketsystemSchema
                     'rated' => $int,
                     'note_count' => $int,
                     'attachment_count' => $int,
+                    // 1.2: merge (the ticket this one was merged into), time tracking (sums of ticketsystem_time)
+                    'merged_into' => $int,
+                    'time_minutes' => $int,
+                    'billable_minutes' => $int,
                 ),
                 'indexes' => array(
                     'PRIMARY' => array( 'type' => 'primary', 'fields' => array( 'id' ) ),
@@ -148,6 +152,18 @@ class ticketsystemSchema
                     'created' => $int ),
                 array( 'ticketsystem_escal_step' => array( 'type' => 'unique', 'fields' => array( 'ticket_id', 'step_key' ) ),
                        'ticketsystem_escal_created' => $index( 'created' ) ) ),
+            // 1.2: the customer's CC addresses of a ticket (ticketsystemWatch): copies of every post, never an identity
+            'ticketsystem_cc' => $table( 'ticketsystem_cc', array(
+                    'ticket_id' => $int, 'email' => $varchar( 255 ), 'added_by' => $int, 'created' => $int ),
+                array( 'ticketsystem_cc_ticket' => $index( 'ticket_id' ) ) ),
+            // 1.2: time spent on a post or a note (ticketsystemTime); "remark", as "comment" is reserved on Oracle
+            'ticketsystem_time' => $table( 'ticketsystem_time', array(
+                    'ticket_id' => $int, 'post_id' => $int, 'note_id' => $int, 'user_id' => $int, 'minutes' => $int,
+                    'billable' => $int, 'covered' => $varchar( 32 ), 'work_date' => $int, 'remark' => $varchar( 255 ),
+                    'account_key' => $varchar( 64 ), 'created' => $int, 'billed' => $int, 'billing_ref' => $varchar( 64 ) ),
+                array( 'ticketsystem_time_ticket' => $index( 'ticket_id' ),
+                       'ticketsystem_time_user' => $index( 'user_id', 'work_date' ),
+                       'ticketsystem_time_bill' => $index( 'billable', 'billed' ) ) ),
         );
     }
 

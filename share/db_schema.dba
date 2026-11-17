@@ -284,6 +284,27 @@ $schema = array (
         'not_null' => '1',
         'default' => 0,
       ),
+      'merged_into' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'time_minutes' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'billable_minutes' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
     ),
     'indexes' => 
     array (
@@ -1077,6 +1098,205 @@ $schema = array (
         'fields' => 
         array (
           0 => 'created',
+        ),
+      ),
+    ),
+  ),
+  'ticketsystem_cc' => 
+  array (
+    'name' => 'ticketsystem_cc',
+    'fields' => 
+    array (
+      'id' => 
+      array (
+        'type' => 'auto_increment',
+        'default' => false,
+      ),
+      'ticket_id' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'email' => 
+      array (
+        'length' => 255,
+        'type' => 'varchar',
+        'not_null' => '1',
+        'default' => '',
+      ),
+      'added_by' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'created' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+    ),
+    'indexes' => 
+    array (
+      'PRIMARY' => 
+      array (
+        'type' => 'primary',
+        'fields' => 
+        array (
+          0 => 'id',
+        ),
+      ),
+      'ticketsystem_cc_ticket' => 
+      array (
+        'type' => 'non-unique',
+        'fields' => 
+        array (
+          0 => 'ticket_id',
+        ),
+      ),
+    ),
+  ),
+  'ticketsystem_time' => 
+  array (
+    'name' => 'ticketsystem_time',
+    'fields' => 
+    array (
+      'id' => 
+      array (
+        'type' => 'auto_increment',
+        'default' => false,
+      ),
+      'ticket_id' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'post_id' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'note_id' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'user_id' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'minutes' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'billable' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'covered' => 
+      array (
+        'length' => 32,
+        'type' => 'varchar',
+        'not_null' => '1',
+        'default' => '',
+      ),
+      'work_date' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'remark' => 
+      array (
+        'length' => 255,
+        'type' => 'varchar',
+        'not_null' => '1',
+        'default' => '',
+      ),
+      'account_key' => 
+      array (
+        'length' => 64,
+        'type' => 'varchar',
+        'not_null' => '1',
+        'default' => '',
+      ),
+      'created' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'billed' => 
+      array (
+        'length' => 11,
+        'type' => 'int',
+        'not_null' => '1',
+        'default' => 0,
+      ),
+      'billing_ref' => 
+      array (
+        'length' => 64,
+        'type' => 'varchar',
+        'not_null' => '1',
+        'default' => '',
+      ),
+    ),
+    'indexes' => 
+    array (
+      'PRIMARY' => 
+      array (
+        'type' => 'primary',
+        'fields' => 
+        array (
+          0 => 'id',
+        ),
+      ),
+      'ticketsystem_time_ticket' => 
+      array (
+        'type' => 'non-unique',
+        'fields' => 
+        array (
+          0 => 'ticket_id',
+        ),
+      ),
+      'ticketsystem_time_user' => 
+      array (
+        'type' => 'non-unique',
+        'fields' => 
+        array (
+          0 => 'user_id',
+          1 => 'work_date',
+        ),
+      ),
+      'ticketsystem_time_bill' => 
+      array (
+        'type' => 'non-unique',
+        'fields' => 
+        array (
+          0 => 'billable',
+          1 => 'billed',
         ),
       ),
     ),

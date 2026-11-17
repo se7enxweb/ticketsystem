@@ -42,7 +42,10 @@ CREATE TABLE ticketsystem_ticket (
   rating_comment varchar(1000) NOT NULL DEFAULT '',
   rated INTEGER(11) NOT NULL DEFAULT '0',
   note_count INTEGER(11) NOT NULL DEFAULT '0',
-  attachment_count INTEGER(11) NOT NULL DEFAULT '0'
+  attachment_count INTEGER(11) NOT NULL DEFAULT '0',
+  merged_into INTEGER(11) NOT NULL DEFAULT '0',
+  time_minutes INTEGER(11) NOT NULL DEFAULT '0',
+  billable_minutes INTEGER(11) NOT NULL DEFAULT '0'
 );
 
 CREATE  INDEX ticketsystem_ticket_account ON ticketsystem_ticket  ( account_key, status );
@@ -178,4 +181,37 @@ CREATE TABLE ticketsystem_escalation (
 CREATE  INDEX ticketsystem_escalation__ticketsystem_escal_created ON ticketsystem_escalation  ( created );
 
 CREATE  UNIQUE INDEX ticketsystem_escalation__ticketsystem_escal_step ON ticketsystem_escalation  ( ticket_id, step_key );
+
+CREATE TABLE ticketsystem_cc (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER(11) NOT NULL DEFAULT '0',
+  email varchar(255) NOT NULL DEFAULT '',
+  added_by INTEGER(11) NOT NULL DEFAULT '0',
+  created INTEGER(11) NOT NULL DEFAULT '0'
+);
+
+CREATE  INDEX ticketsystem_cc_ticket ON ticketsystem_cc  ( ticket_id );
+
+CREATE TABLE ticketsystem_time (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER(11) NOT NULL DEFAULT '0',
+  post_id INTEGER(11) NOT NULL DEFAULT '0',
+  note_id INTEGER(11) NOT NULL DEFAULT '0',
+  user_id INTEGER(11) NOT NULL DEFAULT '0',
+  minutes INTEGER(11) NOT NULL DEFAULT '0',
+  billable INTEGER(11) NOT NULL DEFAULT '0',
+  covered varchar(32) NOT NULL DEFAULT '',
+  work_date INTEGER(11) NOT NULL DEFAULT '0',
+  remark varchar(255) NOT NULL DEFAULT '',
+  account_key varchar(64) NOT NULL DEFAULT '',
+  created INTEGER(11) NOT NULL DEFAULT '0',
+  billed INTEGER(11) NOT NULL DEFAULT '0',
+  billing_ref varchar(64) NOT NULL DEFAULT ''
+);
+
+CREATE  INDEX ticketsystem_time_bill ON ticketsystem_time  ( billable, billed );
+
+CREATE  INDEX ticketsystem_time_ticket ON ticketsystem_time  ( ticket_id );
+
+CREATE  INDEX ticketsystem_time_user ON ticketsystem_time  ( user_id, work_date );
 

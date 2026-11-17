@@ -301,6 +301,68 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "ticketsystem_cc",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "ticket_id": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_cc_ticket"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ticketsystem_time",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "ticket_id": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_time_ticket"
+                    }
+                },
+                {
+                    "keys": {
+                        "user_id": 1,
+                        "work_date": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_time_user"
+                    }
+                },
+                {
+                    "keys": {
+                        "billable": 1,
+                        "billed": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_time_bill"
+                    }
+                }
+            ]
         }
     ]
 }
