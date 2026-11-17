@@ -62,6 +62,16 @@
     <div class="ktl-card-head ts-card-head"><h2 class="ktl-h2 ts-h2" id="ts-reply-h"><i class="fa-solid fa-reply ktl-icon" aria-hidden="true"></i>{'Reply'|i18n( $tsI )}</h2></div>
     <form class="ktl-form ts-form" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl} id="ts-reply-form" enctype="multipart/form-data">
         <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
+        {if and( is_set( $time_enabled ), $time_enabled )}
+        {* 1.2, staff: the time spent with this reply (doc/time-tracking.md) *}
+        <div class="ktl-field ts-field" id="ts-reply-time-field">
+            <label for="ts-reply-time">{'Time spent'|i18n( $tsI )}</label>
+            <input class="ktl-input ts-input{if is_set( $field_errors.time )} is-invalid{/if}" type="text" id="ts-reply-time" name="TicketTimeSpent" value="{$time_draft.spent|wash}" maxlength="12" autocomplete="off" placeholder="0:30"{if is_set( $field_errors.time )} aria-invalid="true" aria-describedby="ts-reply-time-error"{/if} />
+            {if is_set( $field_errors.time )}<p class="ktl-field-error ts-field-error" id="ts-reply-time-error">{$field_errors.time|i18n( $tsI )|wash}</p>{/if}
+            <input type="hidden" name="TicketTimeBillableSent" value="1" />
+            <label><input type="hidden" name="TicketTimeBillable" value="0" /><input type="checkbox" name="TicketTimeBillable" value="1"{if $time_draft.checked} checked="checked"{/if} /> {'Billable'|i18n( $tsI )}{if $time_covered} ({'covered by %level'|i18n( $tsI,, hash( '%level', $time_covered ) )|wash}){/if}</label>
+        </div>
+        {/if}
         {if and( $is_staff, $canned|count )}
         {* a plain select and a submit button that work without JavaScript; ticketsystem-canned.js inserts the text at
            the cursor instead and chooses the macro's status (data-ts-canned-*) *}
