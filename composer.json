@@ -1,6 +1,6 @@
 {
     "name": "se7enxweb/ticketsystem",
-    "description": "ticketsystem for Exponential: help desk tickets as content objects, with readable ticket numbers, status sets, customer-scoped sharing, mail copies of every post and Exponential notification subscriptions. The 7x take-over of the xrow ticketsystem extension.",
+    "description": "ticketsystem for Exponential: help desk tickets as content objects, with readable ticket numbers, status sets, customer-scoped sharing, mail copies of every post and Exponential notification subscriptions. The 7x modernization of the ticketsystem extension.",
     "type": "ezpublish-legacy-extension",
     "keywords": [
         "Exponential",
