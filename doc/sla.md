@@ -72,6 +72,13 @@ over daylight saving time. A start outside the hours counts from the next openin
 with a 1 hour first response is due on Monday at 09:30. A clock without a working day, or with a closing before its
 opening, counts around the clock.
 
+### The defaults of se7enx.com
+
+Confirmed by the owner 2026-11-17: Monday to Friday 09:00-17:00 America/Los_Angeles (the installation's time zone);
+the holidays 01-01, 07-04, 12-25 and Thanksgiving 2026 (2026-11-26) and 2027 (2027-11-25); urgent tickets around
+the clock; the targets of the level `standard` in the table above. Queue leads are not named yet: escalations go to
+the support group (Technical Support Group).
+
 ## Pausing
 
 While a ticket has one of `PausedStatuses[]` (default: Waiting on customer) or is resolved, the clock stands still.
