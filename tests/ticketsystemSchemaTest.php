@@ -118,4 +118,16 @@ class ticketsystemSchemaTest extends TestCase
         include __DIR__ . '/../share/db_schema.dba';
         $this->assertSame( ticketsystemSchema::definition(), array_diff_key( $schema, array( '_info' => 1 ) ), 'share/db_schema.dba is current' );
     }
+
+    public function testAddColumnOnPostgresqlFillsExistingRows()
+    {
+        $pg = "ALTER TABLE ticketsystem_ticket ADD COLUMN merged_into integer;\nALTER TABLE ticketsystem_ticket ALTER merged_into SET DEFAULT 0 ;\nALTER TABLE ticketsystem_ticket ALTER merged_into SET NOT NULL \n";
+        $int = array( 'length' => 11, 'type' => 'int', 'not_null' => '1', 'default' => 0 );
+        $this->assertSame( 'ALTER TABLE ticketsystem_ticket ADD COLUMN merged_into integer DEFAULT 0 NOT NULL', ticketsystemSchema::addColumnSql( 'postgresql', $pg, $int ) );
+        $vc = str_replace( array( 'merged_into', 'integer', 'DEFAULT 0' ), array( 'source', 'character varying(16)', "DEFAULT 'web'" ), $pg );
+        $this->assertSame( "ALTER TABLE ticketsystem_ticket ADD COLUMN source character varying(16) DEFAULT 'web' NOT NULL",
+                           ticketsystemSchema::addColumnSql( 'postgresql', $vc, array( 'length' => 16, 'type' => 'varchar', 'not_null' => '1', 'default' => 'web' ) ) );
+        $my = 'ALTER TABLE ticketsystem_ticket ADD COLUMN merged_into int(11) NOT NULL DEFAULT 0;';
+        $this->assertSame( rtrim( $my, ';' ), ticketsystemSchema::addColumnSql( 'mysql', $my, $int ), 'other engines unchanged' );
+    }
 }

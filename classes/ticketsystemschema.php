@@ -503,6 +503,24 @@ class ticketsystemSchema
     }
 
     /**
+     * The statement that adds a column (pure). PostgreSQL's schema handler adds a column in three statements (ADD COLUMN
+     * without a default, SET DEFAULT, SET NOT NULL), and SET NOT NULL fails on a table with rows, whose new column is
+     * NULL; there it becomes one statement with the default and NOT NULL, which fills the existing rows.
+     */
+    public static function addColumnSql( $engine, $handlerSql, array $fdef )
+    {
+        $sql = rtrim( trim( (string)$handlerSql ), ';' );
+        if ( $engine !== 'postgresql' || !preg_match( '/^(ALTER TABLE \S+ ADD COLUMN \S+ [^;\n]+?);?\s*\n/i', $sql . "\n", $m ) )
+            return $sql;
+        $out = rtrim( $m[1] );
+        if ( array_key_exists( 'default', $fdef ) && $fdef['default'] !== null && $fdef['default'] !== false )
+            $out .= ' DEFAULT ' . ( $fdef['type'] === 'int' ? (int)$fdef['default'] : "'" . str_replace( "'", "''", (string)$fdef['default'] ) . "'" );
+        if ( !empty( $fdef['not_null'] ) )
+            $out .= ' NOT NULL';
+        return $out;
+    }
+
+    /**
      * The columns of definition() an existing table lacks (an installation of an older release), and the
      * statements that add them and their indexes, from the engine's schema handler.
      *
@@ -525,7 +543,7 @@ class ticketsystemSchema
         {
             if ( self::hasColumn( $db, $table, $field ) )
                 continue;
-            $sql = array( rtrim( trim( (string)$handler->generateAddFieldSql( $table, $field, $local[$table]['fields'][$field], array() ) ), ';' ) );
+            $sql = array( self::addColumnSql( $engine, (string)$handler->generateAddFieldSql( $table, $field, $local[$table]['fields'][$field], array() ), $fdef ) );
             // the indexes that need the new column; the last argument: "embedded" on MySQL/SQLite, "with closure" else
             foreach ( $local[$table]['indexes'] as $name => $idef )
                 if ( $idef['type'] !== 'primary' && end( $idef['fields'] ) === $field || ( $idef['type'] !== 'primary' && $idef['fields'][0] === $field ) )
