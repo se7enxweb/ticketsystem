@@ -42,6 +42,14 @@ All in `settings/ticketsystem.ini`, each with a comment there. Override them in
 | | TokenDays | 30 | days a rating link works |
 | | TokenSecret | derived | the secret of the rating links |
 | | QuietSources[] | whmcs | tickets of these sources never get the mail |
+| ReportSettings | DefaultDays | 30 | the default report period: the last n days ([reports.md](reports.md)) |
+| | MaxDays | 1100 | the longest period of one report |
+| | MaxRows | 20000 | tickets counted per part of a report and in the CSV export |
+| SearchSettings | Customers | disabled | `enabled`: customers search their own scope, never notes ([search.md](search.md)) |
+| | MaxTextMatches | 2000 | posts and notes matched per search text |
+| CannedSettings | Macros | enabled | `disabled`: canned replies change nothing but the text ([canned-replies.md](canned-replies.md)) |
+| | MaxLength | 20000 | characters of a canned reply |
 | LimitSettings | MaxSubjectLength, MaxBodyLength | 200, 50000 | characters |
 | | MaxOpenPerHour | 10 | new tickets per user and hour |
 | | ListLimit | 25 | tickets per page |
+| | SearchLimit | 50 | search results per page |

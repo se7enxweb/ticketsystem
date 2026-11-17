@@ -1,4 +1,4 @@
-{* ticketsystem/canned in the administration (doc/canned.md): the canned replies and macros, and the form of one.
+{* ticketsystem/canned in the administration (doc/canned-replies.md): the canned replies and macros, and the form of one.
    Input: $canned, $edit, $values, $field_errors, $categories, $priorities, $status_choices, $placeholders. *}
 {def $tsI = 'extension/ticketsystem'}
 {include uri='design:ticketsystem/parts/admin_open.tpl' title='Canned replies'|i18n( $tsI ) sub='Texts to answer with, and macros that also change the ticket.'|i18n( $tsI )}

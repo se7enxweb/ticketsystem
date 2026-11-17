@@ -51,6 +51,9 @@ Then activate the extension and run the installer; see [doc/install.md](doc/inst
 | Mail | [doc/mail.md](doc/mail.md) |
 | Design and the Katalyst console | [doc/design.md](doc/design.md) |
 | Every setting | [doc/settings.md](doc/settings.md) |
+| Search | [doc/search.md](doc/search.md) |
+| Reports and the CSV export | [doc/reports.md](doc/reports.md) |
+| Canned replies and macros | [doc/canned-replies.md](doc/canned-replies.md) |
 | The workflow event | [doc/workflow.md](doc/workflow.md) |
 | Coming from ticketsystem 1.x | [doc/upgrade.md](doc/upgrade.md) |
 

@@ -6,7 +6,7 @@
  */
 
 /**
- * A canned reply or macro (doc/canned.md): a text with placeholders and the changes it makes when it is sent (status, priority, assign to the sender). owner_id 0 = shared by every staff member.
+ * A canned reply or macro (doc/canned-replies.md): a text with placeholders and the changes it makes when it is sent (status, priority, assign to the sender). owner_id 0 = shared by every staff member.
  */
 class ticketsystemCannedReply extends ticketsystemRow
 {

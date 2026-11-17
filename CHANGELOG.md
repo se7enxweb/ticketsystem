@@ -36,6 +36,18 @@ Work in progress for 1.1 (on main, not released).
   (doc/csat.md).
 - Added: Fetch functions sla, sla_board, escalations and rating (modules/ticketsystem/function_definition.php).
 - Updated: SLA and ratings are on by default.
+- Added: The search (ticketsystem/search) with filters for the number, status, priority, queue, assignee, customer,
+  account and opening date; words are found in the subjects and in every customer-visible post, for staff also in the
+  internal notes (never for a customer); within the read scope, on every database ([SearchSettings], doc/search.md).
+- Added: Reports (ticketsystem/reports) for any period and queue as view parameters: volume per day, week or month,
+  first response and resolution times, SLA attainment and satisfaction (from the SLA part's aggregate when there),
+  the backlog by age, queue and priority, and the workload of every staff member; the CSV export carries no note and
+  no post text and defuses formula cells ([ReportSettings] MaxDays, MaxRows; doc/reports.md).
+- Added: Canned replies and macros, personal and shared, per queue, under the policy function canned (CannedScope
+  Personal / Shared); placeholders for the ticket, the customer's and the staff member's names and the links; a
+  plain select in the reply form, inserted at the cursor by ticketsystem-canned.js ([CannedSettings],
+  doc/canned-replies.md).
+- Added: The fetch functions ticketsystem/search, ticketsystem/report and ticketsystem/canned_replies.
 - Added: Administration pages in the design admin4 and the tab TicketSystem with its left menu (settings/menu.ini).
 - Updated: Every table of the help desk is defined in ticketsystemSchema and created (or completed with the columns
   of a newer release) by the installer on MySQL, PostgreSQL, SQLite, Oracle and MongoDB; every sql/<engine> file and

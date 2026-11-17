@@ -24,3 +24,15 @@ Limits: `[LimitSettings]` (subject length, message length, new tickets per user 
 
 The views check their policy themselves: a visitor who is not signed in is sent to the sign-in page and back to the
 view afterwards; a signed-in user without the policy gets the kernel's "Access denied".
+
+## Staff pages: search, reports, canned replies (1.1)
+
+| View | Policy | Page |
+|---|---|---|
+| `ticketsystem/search` | `report` (customers: `read` with `[SearchSettings] Customers=enabled`) | the search with its filters ([search.md](search.md)) |
+| `ticketsystem/reports` | `report` | the figures of a period and queue, `(format)/csv` the export ([reports.md](reports.md)) |
+| `ticketsystem/canned` | `canned` | the canned replies and macros: list, `(edit)/new`, `(edit)/<id>` ([canned-replies.md](canned-replies.md)) |
+
+Each has a plain template in `design/standard/templates/ticketsystem/` and one for the administration in
+`design/admin4/templates/ticketsystem/`. Every filter form posts with the form token and is redirected to view
+parameters; none of the views reads GET parameters.
