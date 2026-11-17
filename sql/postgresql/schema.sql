@@ -233,3 +233,31 @@ CREATE UNIQUE INDEX ticketsystem_import_ext ON ticketsystem_import USING btree (
 
 ALTER TABLE ONLY ticketsystem_import ADD CONSTRAINT ticketsystem_import_pkey PRIMARY KEY ( id );
 
+CREATE SEQUENCE IF NOT EXISTS ticketsystem_escalation_id_seq
+  START 1
+  INCREMENT 1
+  MAXVALUE 9223372036854775807
+  MINVALUE 1
+  CACHE 1;
+
+CREATE TABLE IF NOT EXISTS ticketsystem_escalation (
+  id integer DEFAULT nextval('ticketsystem_escalation_id_seq'::text) NOT NULL,
+  ticket_id integer DEFAULT 0 NOT NULL,
+  step_key character varying(48) DEFAULT ''::character varying NOT NULL,
+  "action" character varying(16) DEFAULT ''::character varying NOT NULL,
+  target character varying(16) DEFAULT ''::character varying NOT NULL,
+  percent integer DEFAULT 0 NOT NULL,
+  "level" integer DEFAULT 0 NOT NULL,
+  actor_id integer DEFAULT 0 NOT NULL,
+  recipients integer DEFAULT 0 NOT NULL,
+  sent integer DEFAULT 0 NOT NULL,
+  failed integer DEFAULT 0 NOT NULL,
+  created integer DEFAULT 0 NOT NULL
+);
+
+CREATE UNIQUE INDEX ticketsystem_escal_step ON ticketsystem_escalation USING btree ( ticket_id, step_key );
+
+CREATE INDEX ticketsystem_escal_created ON ticketsystem_escalation USING btree ( created );
+
+ALTER TABLE ONLY ticketsystem_escalation ADD CONSTRAINT ticketsystem_escalation_pkey PRIMARY KEY ( id );
+

@@ -219,3 +219,21 @@
 /* 1.1: reports, search and canned replies (meters are native <meter> elements; a delete button in a table row) */
 .ts-app .ts-inline-form, .ktl-app .ts-inline-form { display: inline; margin: 0; }
 .ts-app meter, .ktl-app .ts-card meter { inline-size: 8rem; max-inline-size: 40vw; vertical-align: middle; }
+
+/* 1.1: SLA and the rating link (doc/sla.md, doc/csat.md); tokens only, mobile first */
+.ts-app .ts-sla.is-warn { border-inline-start: 4px solid var(--ts-warn); }
+.ts-app .ts-sla.is-bad { border-inline-start: 4px solid var(--ts-bad); }
+.ts-app .ts-escalations { list-style: none; margin: var(--ts-space-3) 0 0; padding: 0; display: grid; gap: var(--ts-space-2); }
+.ts-app .ts-escalations li { border-top: 1px solid var(--ts-line); padding-top: var(--ts-space-2); }
+.ts-app .ts-sla-pill { margin-top: var(--ts-space-1); }
+.ts-app .ts-rate-scores { border: 0; padding: 0; margin: 0; display: grid; gap: var(--ts-space-2); }
+.ts-app .ts-rate-scores legend { font-weight: 600; margin-bottom: var(--ts-space-2); }
+.ts-app .ts-rate-score { display: flex; align-items: center; gap: var(--ts-space-2); min-height: var(--ts-control); padding: 0 var(--ts-space-3);
+    border: 1px solid var(--ts-line); border-radius: var(--ts-radius-s); background: var(--ts-card); cursor: pointer; }
+.ts-app .ts-rate-score:has( input:checked ) { border-color: var(--ts-accent); background: var(--ts-info-bg); }
+.ts-app .ts-rate-score input { width: 20px; height: 20px; accent-color: var(--ts-accent); }
+.ktl-app .ts-escalations { list-style: none; margin: var(--ktl-space-3) 0 0; padding: 0; display: grid; gap: var(--ktl-space-2); }
+.ktl-app .ts-rate-scores { border: 0; padding: 0; margin: 0; display: grid; gap: var(--ktl-space-2); }
+.ktl-app .ts-rate-score { display: flex; align-items: center; gap: var(--ktl-space-2); min-height: var(--ktl-control); padding: 0 var(--ktl-space-3);
+    border: 1px solid var(--ktl-line); border-radius: var(--ktl-radius-s); cursor: pointer; }
+.ktl-app .ts-rate-score:has( input:checked ) { border-color: var(--ktl-accent); background: var(--ktl-accent-soft); }

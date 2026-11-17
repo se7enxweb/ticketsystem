@@ -160,3 +160,22 @@ CREATE TABLE ticketsystem_import (
 
 CREATE  UNIQUE INDEX ticketsystem_import_ext ON ticketsystem_import  ( source, kind, external_id );
 
+CREATE TABLE ticketsystem_escalation (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER(11) NOT NULL DEFAULT '0',
+  step_key varchar(48) NOT NULL DEFAULT '',
+  action varchar(16) NOT NULL DEFAULT '',
+  target varchar(16) NOT NULL DEFAULT '',
+  percent INTEGER(11) NOT NULL DEFAULT '0',
+  level INTEGER(11) NOT NULL DEFAULT '0',
+  actor_id INTEGER(11) NOT NULL DEFAULT '0',
+  recipients INTEGER(11) NOT NULL DEFAULT '0',
+  sent INTEGER(11) NOT NULL DEFAULT '0',
+  failed INTEGER(11) NOT NULL DEFAULT '0',
+  created INTEGER(11) NOT NULL DEFAULT '0'
+);
+
+CREATE  INDEX ticketsystem_escalation__ticketsystem_escal_created ON ticketsystem_escalation  ( created );
+
+CREATE  UNIQUE INDEX ticketsystem_escalation__ticketsystem_escal_step ON ticketsystem_escalation  ( ticket_id, step_key );
+

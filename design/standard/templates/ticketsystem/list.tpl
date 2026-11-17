@@ -42,7 +42,7 @@
             {foreach $tickets as $t}
                 <tr data-ts-number="{$t.number|wash}">
                     <td data-label="{'Ticket'|i18n( $tsI )|wash}"><a class="ts-ticket-link" href={concat( 'ticketsystem/view/', $t.number )|ezurl}><strong>{$t.subject|wash}</strong></a><br><span class="ktl-muted ktl-small ts-muted ts-small">{$t.number|wash}{if $is_staff} &middot; {$t.account_label|wash}{/if}</span></td>
-                    <td data-label="{'Status'|i18n( $tsI )|wash}">{include uri='design:ticketsystem/parts/status.tpl' label=$t.status_label tone=$t.status_tone}{if and( $t.last_post_staff, $t.done|not, $is_staff|not )} <span class="ktl-badge ts-badge">{'New reply'|i18n( $tsI )}</span>{/if}</td>
+                    <td data-label="{'Status'|i18n( $tsI )|wash}">{include uri='design:ticketsystem/parts/status.tpl' label=$t.status_label tone=$t.status_tone}{if and( $t.last_post_staff, $t.done|not, $is_staff|not )} <span class="ktl-badge ts-badge">{'New reply'|i18n( $tsI )}</span>{/if}{if and( $is_staff, is_set( $t.sla_state ) )}<br>{include uri='design:ticketsystem/parts/sla_badge.tpl' row=$t}{/if}</td>
                     <td data-label="{'Category'|i18n( $tsI )|wash}" class="ktl-col-wide">{$t.category_label|i18n( $tsI )|wash}</td>
                     <td data-label="{'Last update'|i18n( $tsI )|wash}" class="ktl-nowrap">{$t.modified|l10n( 'shortdatetime' )}</td>
                     <td data-label="{'Posts'|i18n( $tsI )|wash}" class="ktl-num">{$t.post_count}</td>

@@ -247,7 +247,7 @@ class ticketsystemService
         $now = time();
         $sla = new ticketsystemSla( $this->settings );
         $level = $sla->enabled() ? $sla->levelFor( $accountKey, $v['subscription_id'], $v['priority'] ) : array( 'level' => '', 'fallback' => '' );
-        list( $responseDue, $resolveDue ) = $sla->enabled() ? $sla->dues( $now, $level['level'], $v['priority'], $level['fallback'] ) : array( 0, 0 );
+        list( $responseDue, $resolveDue ) = $sla->enabled() ? $sla->dues( $now, $level['level'], $v['priority'], $level['fallback'], $v['category'] ) : array( 0, 0 );
         $files = isset( $in['files'] ) ? (array)$in['files'] : array();
         $ticket = ticketsystemTicket::create( array(
             'contentobject_id' => (int)$object->attribute( 'id' ), 'node_id' => (int)$object->attribute( 'main_node_id' ),
@@ -344,6 +344,8 @@ class ticketsystemService
         }
         if ( $next !== $before )
             self::event( $t, $uid, 'status', $before, $next );
+        if ( $next !== $before && $set->isDone( $next ) )
+            ( new ticketsystemCsat( $this->settings ) )->ask( $t );
         if ( $canned )
             $this->applyCannedActions( $t, $canned );
         $this->syncStateAttribute( $t );
@@ -386,6 +388,8 @@ class ticketsystemService
         $t->store();
         self::event( $t, $this->access->userId(), 'status', $current, $next );
         $this->syncStateAttribute( $t );
+        if ( $set->isDone( $next ) && !$set->isDone( $current ) )
+            ( new ticketsystemCsat( $this->settings ) )->ask( $t );
         return array( 'ok' => true, 'message' => sprintf( 'The ticket is now: %s.', $set->label( $next ) ), 'errors' => array() );
     }
 
@@ -707,8 +711,8 @@ class ticketsystemService
         {
             // the new targets from the opening, plus the time the clock was paused so far
             $lvl = $sla->levelFor( (string)$t->attribute( 'account_key' ), (int)$t->attribute( 'subscription_id' ), $priority );
-            list( $oldR, $oldS ) = $sla->dues( (int)$t->attribute( 'created' ), (string)$t->attribute( 'sla_level' ), $old );
-            list( $newR, $newS ) = $sla->dues( (int)$t->attribute( 'created' ), $lvl['level'], $priority, $lvl['fallback'] );
+            list( $oldR, $oldS ) = $sla->dues( (int)$t->attribute( 'created' ), (string)$t->attribute( 'sla_level' ), $old, '', (string)$t->attribute( 'category' ) );
+            list( $newR, $newS ) = $sla->dues( (int)$t->attribute( 'created' ), $lvl['level'], $priority, $lvl['fallback'], (string)$t->attribute( 'category' ) );
             if ( !(int)$t->attribute( 'responded' ) && $newR )
                 $t->setAttribute( 'response_due', $newR + max( 0, (int)$t->attribute( 'response_due' ) - $oldR ) * ( $oldR ? 1 : 0 ) );
             if ( $newS )
@@ -743,7 +747,7 @@ class ticketsystemService
     }
 
     /** Writes a label into an ezselection attribute of the ticket object when it differs and the option exists. */
-    protected function syncSelection( ticketsystemTicket $t, $identifier, $label )
+    public function syncSelection( ticketsystemTicket $t, $identifier, $label )
     {
         $object = $t->contentObject();
         $map = $object ? $object->dataMap() : array();
@@ -762,95 +766,26 @@ class ticketsystemService
 
     // ------------------------------------------------------------------------------------- 1.1: escalation
 
-    /** Escalates by hand (staff): level 1 or, when it is escalated already, level 2; alerts like the SLA check. */
+    /**
+     * Escalates by hand (staff): one level up, the queue leads (or the support group) alerted, the ticket marked
+     * escalated (ticketsystemEscalation::manual()).
+     */
     public function escalate( ticketsystemTicket $t )
     {
         if ( !$this->access->isStaff() || !$this->access->canRead( $t ) )
             return self::fail( 'You cannot escalate this ticket.' );
-        $old = (int)$t->attribute( 'escalation' );
-        $new = min( ticketsystemSla::BREACHED, $old + 1 );
-        if ( $new === $old )
-            return array( 'ok' => true, 'message' => 'The ticket is escalated to the highest level already.', 'errors' => array() );
-        $this->applyEscalation( $t, $new, 'manual' );
-        return array( 'ok' => true, 'message' => 'The ticket was escalated.', 'errors' => array() );
-    }
-
-    /** Sets the escalation level, records it, raises the priority when configured and sends the alert. */
-    protected function applyEscalation( ticketsystemTicket $t, $level, $why, $notify = true )
-    {
-        $old = (int)$t->attribute( 'escalation' );
-        $t->setAttribute( 'escalation', (int)$level );
-        $t->setAttribute( 'escalated', time() );
-        $t->store();
-        self::event( $t, $why === 'manual' ? $this->access->userId() : 0, 'escalate', (string)$old, $level . ':' . $why );
-        if ( $this->settings->enabled( 'SLASettings', 'RaisePriority', 'disabled' ) )
-        {
-            $keys = array_keys( $this->settings->priorities() );
-            $i = array_search( (string)$t->attribute( 'priority' ), $keys, true );
-            if ( $i !== false && $i + 1 < count( $keys ) )
-            {
-                $t->setAttribute( 'priority', $keys[$i + 1] );
-                $t->setAttribute( 'priority_rank', $i + 2 );
-                $t->store();
-                self::event( $t, 0, 'priority', $keys[$i], $keys[$i + 1] );
-            }
-        }
-        if ( $notify )
-            $this->mailer->sendAlert( $t, (int)$level, $why, $this->alertRecipients( $t ) );
-    }
-
-    /** The user ids an alert goes to: the assignee, else the staff group (AlertStaffGroup). */
-    public function alertRecipients( ticketsystemTicket $t )
-    {
-        if ( (int)$t->attribute( 'assignee_id' ) > 0 )
-            return array( (int)$t->attribute( 'assignee_id' ) );
-        return $this->settings->enabled( 'SLASettings', 'AlertStaffGroup' ) ? array_keys( $this->staffMembers() ) : array();
+        return ( new ticketsystemEscalation( $this->settings, $this ) )->manual( $t, $this->access->userId() );
     }
 
     /**
-     * The SLA check of the cronjob: every active ticket with a target, escalated at WarnPercent and when a target is
-     * missed; breach flags kept. Runs as the cronjob (no access checks); the alerts are mailed.
+     * The SLA check of the cronjob (ticketsystemEscalation::run()): the escalation steps due on every active ticket
+     * with a target, each once. Runs as the cronjob (no access checks).
      *
-     * @return array checked, warned, breached
+     * @return array checked, steps, mails, warned, breached, locked
      */
-    public static function slaRun( ?ticketsystemSettings $settings = null, $now = null, $dryRun = false, $notify = true, ?ticketsystemService $service = null )
+    public static function slaRun( ?ticketsystemSettings $settings = null, $now = null, $dryRun = false )
     {
-        $settings = $settings ?: ticketsystemSettings::instance();
-        $sla = new ticketsystemSla( $settings );
-        $out = array( 'checked' => 0, 'warned' => 0, 'breached' => 0 );
-        if ( !$sla->enabled() )
-            return $out;
-        $now = $now === null ? time() : (int)$now;
-        $set = $settings->statusSet();
-        $where = ticketsystemDesk::statusCondition( $set->active(), ticketsystemDesk::quoter() );
-        $where = ( $where !== '' ? $where . ' AND ' : '' ) . '( response_due > 0 OR resolve_due > 0 ) AND escalation < 2';
-        if ( !$service )
-        {
-            $admin = eZUser::fetch( 14 );
-            $service = new self( new ticketsystemAccess( $admin instanceof eZUser ? $admin : eZUser::currentUser() ), $settings );
-        }
-        for ( $offset = 0; ; $offset += 200 )
-        {
-            $batch = ticketsystemTicket::fetchWhere( $where, $offset, 200, 'id ASC' );
-            foreach ( $batch as $t )
-            {
-                $out['checked']++;
-                $c = $sla->check( $t->values(), $now );
-                if ( $c['breached'] !== (int)$t->attribute( 'breached' ) && !$dryRun )
-                {
-                    $t->setAttribute( 'breached', $c['breached'] );
-                    $t->store();
-                }
-                if ( !$c['raise'] )
-                    continue;
-                $out[$c['escalation'] >= ticketsystemSla::BREACHED ? 'breached' : 'warned']++;
-                if ( !$dryRun )
-                    $service->applyEscalation( $t, $c['escalation'], $c['escalation'] >= ticketsystemSla::BREACHED ? 'sla_breach' : 'sla_warn', $notify );
-            }
-            if ( count( $batch ) < 200 )
-                break;
-        }
-        return $out;
+        return ( new ticketsystemEscalation( $settings ) )->run( $now, $dryRun );
     }
 
     /** The SLA state of a ticket for the views (ticketsystemSla::state() plus labels). */
@@ -860,11 +795,16 @@ class ticketsystemService
         if ( !$sla->enabled() || ( !(int)$t->attribute( 'response_due' ) && !(int)$t->attribute( 'resolve_due' ) ) )
             return null;
         $s = $sla->state( $t->values(), time() );
-        $levels = $sla->levels();
         $s['level'] = (string)$t->attribute( 'sla_level' );
-        $s['level_label'] = isset( $levels[$s['level']] ) ? $levels[$s['level']] : strtoupper( $s['level'] );
+        $s['level_label'] = $sla->levelLabel( $s['level'] );
+        $s['worst_label'] = ticketsystemSla::stateLabel( $s['worst'] );
+        $s['escalated'] = (int)$t->attribute( 'escalated' );
+        $s['log'] = $this->access->isStaff() ? ticketsystemEscalation::logFor( (int)$t->attribute( 'id' ) ) : array();
         foreach ( array( 'response', 'resolution' ) as $k )
+        {
             $s[$k]['text'] = $s[$k]['state'] === 'none' ? '' : ticketsystemDesk::left( $s[$k]['left'] );
+            $s[$k]['label'] = ticketsystemSla::stateLabel( $s[$k]['state'] );
+        }
         return $s;
     }
 
@@ -961,17 +901,7 @@ class ticketsystemService
     {
         if ( !$this->mayRate( $t ) )
             return self::fail( 'This ticket cannot be rated now.' );
-        $score = (int)$score;
-        if ( $score < 1 || $score > 5 )
-            return self::fail( 'Please choose from 1 to 5 stars.', array( 'rating' => 'Please choose from 1 to 5 stars.' ) );
-        $comment = mb_substr( trim( preg_replace( '/\s+/u', ' ', ticketsystemText::clean( $comment ) ) ), 0, 1000 );
-        $old = (int)$t->attribute( 'rating' );
-        $t->setAttribute( 'rating', $score );
-        $t->setAttribute( 'rating_comment', $comment );
-        $t->setAttribute( 'rated', time() );
-        $t->store();
-        self::event( $t, $this->access->userId(), 'rate', (string)$old, (string)$score );
-        return array( 'ok' => true, 'message' => 'Thank you for your rating.', 'errors' => array() );
+        return ( new ticketsystemCsat( $this->settings ) )->record( $t, $score, $comment, $this->access->userId(), 'web' );
     }
 
     // ------------------------------------------------------------------------------------ 1.1: canned replies

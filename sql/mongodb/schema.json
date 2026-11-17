@@ -269,6 +269,38 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "ticketsystem_escalation",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "ticket_id": 1,
+                        "step_key": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_escal_step",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "created": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_escal_created"
+                    }
+                }
+            ]
         }
     ]
 }

@@ -1,0 +1,4 @@
+{* The SLA state of a staff list row (ticketsystemView::deskRow()): on track, due soon, breached, paused; the time left.
+   Input: $row (sla_state, sla_tone, sla_due, escalation). No inline CSS. *}{if $row.sla_state}{def $tsSl = hash( 'ok', 'On track', 'warn', 'Due soon', 'breached', 'Breached', 'paused', 'Paused', 'met', 'Met' )}
+<span class="ktl-pill is-{$row.sla_tone|wash} ts-pill is-{$row.sla_tone|wash} ts-sla-pill" data-ts-sla="{$row.sla_state|wash}"><span class="ktl-dot ts-dot" aria-hidden="true"></span>{'SLA'|i18n( 'extension/ticketsystem' )}: {first_set( $tsSl[$row.sla_state], $row.sla_state )|i18n( 'extension/ticketsystem' )|wash}</span>{if $row.sla_due} <span class="ktl-muted ktl-small ts-muted ts-small">{$row.sla_due.text|i18n( 'extension/ticketsystem' )|wash}</span>{/if}{if $row.escalation|gt( 0 )} <span class="ktl-badge ts-badge ts-escalated">{'escalated'|i18n( 'extension/ticketsystem' )}</span>{/if}
+{undef $tsSl}{/if}

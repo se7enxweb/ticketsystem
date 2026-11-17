@@ -55,6 +55,22 @@ $ViewList['settings'] = array(
     'script' => 'settings.php',
     'default_navigation_part' => 'ezticketsystemnavigationpart',
     'params' => array( 'Section' ) );
+// 1.1: the SLA board (ticketsystem/manage), the satisfaction ratings (ticketsystem/report) and the rating link of the
+// mail "How did we do?" (no sign-in: a signed token that works once; PolicyOmitList)
+$ViewList['sla'] = array(
+    'script' => 'sla.php',
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
+    'params' => array(),
+    'unordered_params' => array( 'state' => 'state' ) );
+$ViewList['satisfaction'] = array(
+    'script' => 'satisfaction.php',
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
+    'params' => array(),
+    'unordered_params' => array( 'days' => 'days' ) );
+$ViewList['rate'] = array(
+    'script' => 'rate.php',
+    'default_navigation_part' => 'ezmynavigationpart',
+    'params' => array( 'Token', 'Score' ) );
 // the original list of ticketsystem 1.x (the folder [TicketSettings] TicketNodeID)
 $ViewList['tickets'] = array(
     'script' => 'tickets.php',

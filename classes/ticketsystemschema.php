@@ -23,7 +23,8 @@
 class ticketsystemSchema
 {
     const TABLES = array( 'ticketsystem_ticket', 'ticketsystem_counter', 'ticketsystem_note', 'ticketsystem_event', 'ticketsystem_canned',
-                          'ticketsystem_attachment', 'ticketsystem_post', 'ticketsystem_mailin', 'ticketsystem_import' );
+                          'ticketsystem_attachment', 'ticketsystem_post', 'ticketsystem_mailin', 'ticketsystem_import',
+                          'ticketsystem_escalation' );
 
     /** @return array generic schema (without _info) */
     public static function definition()
@@ -140,6 +141,13 @@ class ticketsystemSchema
                     'source' => $varchar( 16 ), 'kind' => $varchar( 16 ), 'external_id' => $varchar( 64 ), 'local_id' => $int,
                     'created' => $int ),
                 array( 'ticketsystem_import_ext' => array( 'type' => 'unique', 'fields' => array( 'source', 'kind', 'external_id' ) ) ) ),
+            // the escalation log: one row per ticket and step (ticketsystemEscalation; the unique key keeps a step to once)
+            'ticketsystem_escalation' => $table( 'ticketsystem_escalation', array(
+                    'ticket_id' => $int, 'step_key' => $varchar( 48 ), 'action' => $varchar( 16 ), 'target' => $varchar( 16 ),
+                    'percent' => $int, 'level' => $int, 'actor_id' => $int, 'recipients' => $int, 'sent' => $int, 'failed' => $int,
+                    'created' => $int ),
+                array( 'ticketsystem_escal_step' => array( 'type' => 'unique', 'fields' => array( 'ticket_id', 'step_key' ) ),
+                       'ticketsystem_escal_created' => $index( 'created' ) ) ),
         );
     }
 

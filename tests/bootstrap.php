@@ -4,5 +4,6 @@
  *   vendor/bin/phpunit -c extension/ticketsystem/phpunit.xml.dist
  */
 foreach ( array( 'ticketsystemsettings', 'ticketsystemstatusset', 'ticketsystemnumber', 'ticketsystemtext', 'ticketsystemaccess', 'ticketsystemmailer', 'ticketsystemschema', 'ticketsystemsla', 'ticketsystemdesk',
-                 'ticketsystemmailparser', 'ticketsystemreplytoken', 'ticketsystemreport', 'ticketsystemfiles', 'ticketsystemservice', 'ticketsystemwhmcsimport' ) as $f )
+                 'ticketsystemmailparser', 'ticketsystemreplytoken', 'ticketsystemreport', 'ticketsystemfiles', 'ticketsystemservice', 'ticketsystemwhmcsimport',
+                 'ticketsystembusinessclock', 'ticketsystemcsat' ) as $f )
     require_once __DIR__ . '/../classes/' . $f . '.php';

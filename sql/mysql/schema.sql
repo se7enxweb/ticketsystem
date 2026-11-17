@@ -152,3 +152,21 @@ CREATE TABLE ticketsystem_import (
   UNIQUE KEY ticketsystem_import_ext ( source, kind, external_id )
 ) ENGINE=InnoDB;
 
+CREATE TABLE ticketsystem_escalation (
+  id int(11) NOT NULL AUTO_INCREMENT,
+  ticket_id int(11) NOT NULL DEFAULT '0',
+  step_key varchar(48) NOT NULL DEFAULT '',
+  action varchar(16) NOT NULL DEFAULT '',
+  target varchar(16) NOT NULL DEFAULT '',
+  percent int(11) NOT NULL DEFAULT '0',
+  level int(11) NOT NULL DEFAULT '0',
+  actor_id int(11) NOT NULL DEFAULT '0',
+  recipients int(11) NOT NULL DEFAULT '0',
+  sent int(11) NOT NULL DEFAULT '0',
+  failed int(11) NOT NULL DEFAULT '0',
+  created int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY ( id ),
+  UNIQUE KEY ticketsystem_escal_step ( ticket_id, step_key ),
+  KEY ticketsystem_escal_created ( created )
+) ENGINE=InnoDB;
+

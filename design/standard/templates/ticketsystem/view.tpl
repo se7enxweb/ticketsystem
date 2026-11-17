@@ -114,6 +114,7 @@
         {if $ticket.priority_label}<dt>{'Priority'|i18n( $tsI )}</dt><dd>{$ticket.priority_label|i18n( $tsI )|wash}</dd>{/if}
         {if $is_staff}<dt>{'Account'|i18n( $tsI )}</dt><dd>{$ticket.account_label|wash}</dd>{/if}
         <dt>{'Last update'|i18n( $tsI )}</dt><dd>{$ticket.modified|l10n( 'shortdatetime' )}</dd>
+        {if $is_staff|not}{include uri='design:ticketsystem/parts/sla_hint.tpl' ticket_id=$ticket.id}{/if}
         <dt>{'E-mail copies'|i18n( $tsI )}</dt><dd>{if $following}{'You get every post by e-mail.'|i18n( $tsI )}{else}{'You do not follow this ticket.'|i18n( $tsI )}{/if}</dd>
     </dl>
     {if or( $may_resolve, $may_reopen, $is_staff )}
@@ -141,7 +142,7 @@
     <div class="ktl-card-head ts-card-head"><h2 class="ktl-h2 ts-h2" id="ts-work-h"><i class="fa-solid fa-user-gear ktl-icon" aria-hidden="true"></i>{'Work on it'|i18n( $tsI )}</h2></div>
     <dl class="ktl-facts is-compact ts-facts">
         <dt>{'Assigned to'|i18n( $tsI )}</dt><dd id="ts-assignee">{if $ticket.assignee_id}{$ticket.assignee|wash}{else}{'nobody'|i18n( $tsI )}{/if}</dd>
-        {if $sla}<dt>{'SLA'|i18n( $tsI )}</dt><dd>{$sla.level_label|wash}: {$sla.worst|i18n( $tsI )|wash}{if $ticket.escalation|gt( 0 )} &middot; {'escalated'|i18n( $tsI )}{/if}</dd>{/if}
+        {if $sla}<dt>{'SLA'|i18n( $tsI )}</dt><dd>{$sla.level_label|wash}: {$sla.worst_label|i18n( $tsI )|wash}{if $ticket.escalation|gt( 0 )} &middot; {'escalated'|i18n( $tsI )}{/if} &middot; <a href="#ts-sla">{'details'|i18n( $tsI )}</a></dd>{/if}
     </dl>
     <form class="ktl-form ts-form" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl} id="ts-work-form">
         <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
@@ -159,6 +160,7 @@
         {if and( $ticket.escalation|lt( 2 ), $ticket.done|not )}<p class="ktl-actions ts-actions"><button type="submit" class="ktl-btn is-ghost ts-btn is-ghost" name="TicketEscalate" value="1" id="ts-escalate">{'Escalate'|i18n( $tsI )}</button></p>{/if}
     </form>
 </section>
+{include uri='design:ticketsystem/parts/sla.tpl' sla=$sla ticket=$ticket}
 {/if}
 
 {if or( $may_rate, and( $rating.enabled, $rating.score|gt( 0 ) ) )}

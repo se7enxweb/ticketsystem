@@ -280,3 +280,37 @@ END;
 
 CREATE UNIQUE INDEX ticketsystem_import_ext ON ticketsystem_import ( source, kind, external_id );
 
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE SEQUENCE se_ticketsystem_escalation';
+EXCEPTION WHEN OTHERS THEN
+  IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+CREATE TABLE ticketsystem_escalation (
+  id INTEGER NOT NULL,
+  ticket_id INTEGER DEFAULT 0 NOT NULL,
+  step_key VARCHAR2(48),
+  action VARCHAR2(16),
+  target VARCHAR2(16),
+  percent INTEGER DEFAULT 0 NOT NULL,
+  "LEVEL" INTEGER DEFAULT 0 NOT NULL,
+  actor_id INTEGER DEFAULT 0 NOT NULL,
+  recipients INTEGER DEFAULT 0 NOT NULL,
+  sent INTEGER DEFAULT 0 NOT NULL,
+  failed INTEGER DEFAULT 0 NOT NULL,
+  created INTEGER DEFAULT 0 NOT NULL,
+  PRIMARY KEY ( id )
+);
+
+CREATE OR REPLACE TRIGGER ticketsystem_escalation_id_tr
+BEFORE INSERT ON ticketsystem_escalation FOR EACH ROW WHEN (new.id IS NULL)
+BEGIN
+  SELECT se_ticketsystem_escalation.nextval INTO :new.id FROM dual;
+END;
+/
+
+CREATE INDEX ticketsystem_escal_created ON ticketsystem_escalation ( created );
+
+CREATE UNIQUE INDEX ticketsystem_escal_step ON ticketsystem_escalation ( ticket_id, step_key );
+

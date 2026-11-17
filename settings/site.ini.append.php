@@ -11,5 +11,8 @@ PolicyOmitList[]=ticketsystem/search
 PolicyOmitList[]=ticketsystem/reports
 PolicyOmitList[]=ticketsystem/canned
 PolicyOmitList[]=ticketsystem/settings
+PolicyOmitList[]=ticketsystem/sla
+PolicyOmitList[]=ticketsystem/satisfaction
+PolicyOmitList[]=ticketsystem/rate
 
 */ ?>

@@ -73,4 +73,77 @@ class ticketsystemFunctionCollection
                             'set_priority' => (string)$c->attribute( 'set_priority' ), 'assign_self' => (bool)$c->attribute( 'assign_self' ) );
         return array( 'result' => $out );
     }
+
+    // ------------------------------------------------------------------------------- SLA and ratings
+
+    protected static function readable( $ticketId, ticketsystemAccess $access )
+    {
+        $t = ticketsystemTicket::fetch( (int)$ticketId );
+        return $t && $access->canRead( $t ) ? $t : null;
+    }
+
+    protected static function staffReports( ticketsystemAccess $access )
+    {
+        return ( $access->may( 'report' ) || $access->isStaff() ) && $access->scope( 'read' ) >= ticketsystemAccess::ALL;
+    }
+
+    /**
+     * The SLA state of a ticket. Staff: ticketsystemService::slaState() (both targets, labels, the escalation log);
+     * anyone else who may read it: the hint (the first response expected by, while staff has not answered).
+     */
+    public static function sla( $ticketId )
+    {
+        $access = self::access();
+        $t = self::readable( $ticketId, $access );
+        if ( !$t )
+            return array( 'result' => null );
+        $service = new ticketsystemService( $access );
+        $s = $service->slaState( $t );
+        if ( !$s || $access->isStaff() )
+            return array( 'result' => $s );
+        $settings = ticketsystemSettings::instance();
+        if ( !$settings->enabled( 'SLASettings', 'CustomerHint', 'enabled' ) || (int)$t->attribute( 'responded' ) > 0
+             || !in_array( $s['response']['state'], array( 'ok', 'warn' ), true ) )
+            return array( 'result' => array( 'hint' => false ) );
+        return array( 'result' => array( 'hint' => true, 'response_due' => (int)$s['response']['due'], 'level_label' => $s['level_label'] ) );
+    }
+
+    public static function slaBoard( $state = '', $limit = 100 )
+    {
+        $access = self::access();
+        if ( !$access->isStaff() )
+            return array( 'result' => null );
+        return array( 'result' => ticketsystemEscalation::board( $access, null, (string)$state, (int)$limit ) );
+    }
+
+    public static function escalations( $ticketId )
+    {
+        $access = self::access();
+        $t = $access->isStaff() ? self::readable( $ticketId, $access ) : null;
+        return array( 'result' => $t ? ticketsystemEscalation::logFor( (int)$t->attribute( 'id' ) ) : null );
+    }
+
+    public static function rating( $ticketId )
+    {
+        $access = self::access();
+        $t = self::readable( $ticketId, $access );
+        return array( 'result' => $t ? ( new ticketsystemCsat() )->forTicket( $t ) : null );
+    }
+
+    public static function csatSummary( $from = 0, $to = 0, $category = '', $assigneeId = 0 )
+    {
+        $access = self::access();
+        if ( !self::staffReports( $access ) )
+            return array( 'result' => null );
+        return array( 'result' => ( new ticketsystemCsat() )->summary( array( 'from' => (int)$from, 'to' => (int)$to,
+                                                                              'category' => (string)$category, 'assignee_id' => (int)$assigneeId ) ) );
+    }
+
+    public static function csatLatest( $from = 0, $to = 0, $offset = 0, $limit = 50 )
+    {
+        $access = self::access();
+        if ( !self::staffReports( $access ) )
+            return array( 'result' => null );
+        return array( 'result' => ( new ticketsystemCsat() )->latest( array( 'from' => (int)$from, 'to' => (int)$to ), (int)$offset, min( 200, max( 1, (int)$limit ) ) ) );
+    }
 }
