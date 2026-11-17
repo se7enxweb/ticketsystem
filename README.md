@@ -55,7 +55,7 @@ drawn with admin4's shared components, light and dark. See [doc/views.md](doc/vi
 
 - Exponential 6.0.15 or later
 - PHP 8.0 to 8.5
-- MySQL/MariaDB, PostgreSQL, SQLite, Oracle (with the ezoracle extension) or MongoDB
+- MySQL/MariaDB, PostgreSQL, SQLite, Oracle (with the ezoracle extension, 2.3.14 or later) or MongoDB
 
 ## Installation
 

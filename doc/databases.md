@@ -43,9 +43,8 @@ MongoDB (an atomic `$inc`, as there is no row lock): single-table `SELECT` with 
 not a `CASE`), `COUNT(*) AS n` and `MAX(...) AS m` alone, paging by the driver's offset and limit; no `JOIN`, no `GROUP
 BY` (counts per status are one count each), no `UPDATE`/`DELETE` without a `WHERE`. Rows are written through
 `eZPersistentObject` with the id left to the database. On Oracle the columns `number` (ticketsystem_ticket) and `level` (ticketsystem_escalation), reserved words, are quoted by the driver
-(`settings/ezoracle.ini.append.php`, `[QuotedIdentifierSettings] TypeColumnNames[]=number` and `level`). That setting is on
-ezoracle's main branch and not yet in a release of ezoracle (the latest, 2.3.13, does not have it), so Oracle needs
-ezoracle from main until its next release.
+(`settings/ezoracle.ini.append.php`, `[QuotedIdentifierSettings] TypeColumnNames[]=number` and `level`). That setting needs
+ezoracle 2.3.14 or later (2.3.13 and earlier do not know it).
 
 ## Proof
 
