@@ -65,7 +65,7 @@
 {case match='import'}
 <section class="a4-card" aria-labelledby="ts-s-import-h" id="ts-settings-import">
     <div class="a4-card-head"><h2 class="a4-card-title a4-h3" id="ts-s-import-h">{'WHMCS import'|i18n( $tsI )}</h2>
-        <p class="a4-meta">{'Imported tickets are closed history. The import runs on the command line (doc/import.md).'|i18n( $tsI )}</p></div>
+        <p class="a4-meta">{'Imported tickets are closed history. Run it on the page WHMCS import or on the command line (doc/import-whmcs.md).'|i18n( $tsI )}</p></div>
     <div class="a4-card-body">
     <ul class="a4-figures">
         <li class="a4-figure"><strong>{$import.ticket}</strong> <span>{'tickets imported'|i18n( $tsI )}</span></li>
