@@ -43,7 +43,7 @@ abstract class ticketsystemRow extends eZPersistentObject
     }
 
     /** @return static[] */
-    public static function fetchBy( array $conds, array $sort = null, $offset = 0, $limit = 0 )
+    public static function fetchBy( array $conds, ?array $sort = null, $offset = 0, $limit = 0 )
     {
         $class = get_called_class();
         $def = $class::definition();
@@ -51,7 +51,7 @@ abstract class ticketsystemRow extends eZPersistentObject
                                                            $limit ? array( 'offset' => (int)$offset, 'length' => (int)$limit ) : null );
     }
 
-    public static function countBy( array $conds = null )
+    public static function countBy( ?array $conds = null )
     {
         $class = get_called_class();
         return (int)eZPersistentObject::count( $class::definition(), $conds );

@@ -111,7 +111,7 @@ class ticketsystemDesk
     }
 
     /** The view parameters of a filter, sort and offset: "/(status)/all/(sort)/number" (pure). */
-    public static function url( $base, array $filter, $sort = '', $order = '', $offset = 0, array $spec = null )
+    public static function url( $base, array $filter, $sort = '', $order = '', $offset = 0, ?array $spec = null )
     {
         $out = rtrim( (string)$base, '/' );
         foreach ( $filter as $k => $v )
