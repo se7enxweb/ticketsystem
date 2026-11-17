@@ -5,6 +5,11 @@
  * account's own sites; anything else is ignored).
  * Post/redirect/get to the new ticket.
  *
+ * 1.2, staff (ticketsystem/manage): a ticket for a customer (doc/staff-opened-tickets.md). The view parameters
+ * (user)/<id> or (customer)/<Katalyst customer id> preselect the customer (the Katalyst customer page links here);
+ * the form sends TicketForUser (a user id or login) or TicketForCustomer, and TicketNotify (1: the opening post is
+ * mailed to the customer).
+ *
  * @copyright Copyright (C) 2026 7x. All rights reserved.
  * @license GNU General Public License v2.0 (or any later version)
  * @package ticketsystem
@@ -23,10 +28,30 @@ $values = array( 'subject' => '', 'body' => '', 'category' => $settings->default
                  'subscription_id' => 0 );
 $errors = array();
 $fieldErrors = array();
+$isStaff = $access->isStaff();
+// staff: the customer the ticket is for (view parameters preselect; the form posts them back)
+$for = array( 'user' => isset( $Params['UserParameters']['user'] ) ? (string)$Params['UserParameters']['user'] : '',
+              'customer' => isset( $Params['UserParameters']['customer'] ) && ctype_digit( (string)$Params['UserParameters']['customer'] ) ? (int)$Params['UserParameters']['customer'] : 0,
+              'notify' => true, 'label' => '' );
+if ( $isStaff && $http->hasPostVariable( 'TicketCreate' ) )
+{
+    $for['user'] = trim( (string)$http->postVariable( 'TicketForUser', '' ) );
+    $for['customer'] = (int)$http->postVariable( 'TicketForCustomer', 0 );
+    $for['notify'] = (bool)$http->postVariable( 'TicketNotify', 0 );
+}
+$forCustomer = $isStaff && ( $for['user'] !== '' || $for['customer'] > 0 );
+if ( $forCustomer )
+{
+    list( $forUser, $forKey, $forWhy ) = ( new ticketsystemService( $access, $settings ) )->customerFor( $for['user'], $for['customer'] );
+    $for['label'] = $forUser ? (string)( $forUser->contentObject() ? $forUser->contentObject()->attribute( 'name' ) : '' ) . ' (' . ticketsystemAccount::label( $forKey ) . ')' : '';
+    if ( !$forUser )
+        $fieldErrors['customer'] = $forWhy;
+}
 
 // the account's sites, to say which one the ticket is about (Katalyst only)
 $sites = array();
-$customer = $access->account()->customerFor( $access->userId() );
+$customer = $forCustomer ? ( isset( $forKey ) && preg_match( '/^katalyst:(\d+)$/', $forKey, $fm ) && class_exists( 'expKatalystCustomer' ) ? expKatalystCustomer::fetch( (int)$fm[1] ) : null )
+                        : $access->account()->customerFor( $access->userId() );
 if ( $customer && class_exists( 'expKatalystCustomerService' ) )
 {
     try
@@ -55,8 +80,10 @@ if ( $http->hasPostVariable( 'TicketCreate' ) )
     else
     {
         list( $upload, $uploadErrors ) = ( new ticketsystemFiles( $settings ) )->fromUpload( 'TicketFiles' );
+        $service = new ticketsystemService( $access, $settings );
         $r = $uploadErrors ? array( 'ok' => false, 'message' => 'Please check the files.', 'errors' => $uploadErrors )
-                           : ( new ticketsystemService( $access, $settings ) )->open( $values + array( 'files' => $upload ) );
+                           : ( $forCustomer ? $service->openFor( $values + array( 'files' => $upload, 'user' => $for['user'], 'customer' => $for['customer'], 'notify' => $for['notify'] ) )
+                                            : $service->open( $values + array( 'files' => $upload ) ) );
         if ( $r['ok'] )
         {
             ticketsystemView::flash( array( $r['message'] ) );
@@ -73,4 +100,5 @@ $Result = ticketsystemView::render( $user, 'tickets', 'new', array(
     'values' => $values, 'ts_errors' => $errors, 'field_errors' => $fieldErrors,
     'categories' => $settings->categories(), 'priorities' => $settings->priorities(), 'sites' => $sites,
     'attach' => ( new ticketsystemFiles( $settings ) )->formInfo(),
+    'is_staff' => $isStaff, 'for' => $for, 'for_customer' => $forCustomer,
 ), ticketsystemView::path( ezpI18n::tr( 'extension/ticketsystem', 'New ticket' ) ) );

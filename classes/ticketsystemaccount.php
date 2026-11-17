@@ -91,6 +91,8 @@ class ticketsystemAccount
             return 'Customer ' . $m[1];
         if ( preg_match( '/^user:(\d+)$/', (string)$key, $m ) )
             return 'User ' . $m[1];
+        if ( strpos( (string)$key, 'internal:' ) === 0 )
+            return 'Internal';
         return (string)$key;
     }
 }

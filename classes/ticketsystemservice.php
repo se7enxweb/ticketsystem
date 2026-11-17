@@ -214,7 +214,27 @@ class ticketsystemService
         if ( $v['subscription_id'] && !( $customer && class_exists( 'expKatalystAccessService' )
                                          && expKatalystAccessService::subscriptionForCustomer( (int)$customer->attribute( 'id' ), $v['subscription_id'] ) ) )
             $v['subscription_id'] = 0;
-        $parent = $this->parentNodeFor( $user );
+        return $this->create( $user, $accountKey, $v, array( 'creator_id' => $uid, 'notify' => true, 'staff_post' => $this->access->isStaff(),
+                                                             'files' => isset( $in['files'] ) ? (array)$in['files'] : array(),
+                                                             'source' => isset( $in['source'] ) ? (string)$in['source'] : 'web' ) );
+    }
+
+    /**
+     * Creates a ticket for an opener (the core of open(), openFor() and the automatic tickets): the ticket object below
+     * the opener's node, published as the creator; the index row with a new number; the opener (and the creator) follow
+     * it; the opening post is mailed when $o['notify'].
+     *
+     * @param eZUser $opener the customer (or the help desk user of an internal ticket)
+     * @param string $accountKey
+     * @param array $v clean values of validateNew()
+     * @param array $o creator_id, notify (bool), staff_post (bool: the creator writes as staff), files, source,
+     *                 external_id, message
+     */
+    protected function create( eZUser $opener, $accountKey, array $v, array $o )
+    {
+        $openerId = (int)$opener->attribute( 'contentobject_id' );
+        $creatorId = isset( $o['creator_id'] ) ? (int)$o['creator_id'] : $openerId;
+        $parent = $this->parentNodeFor( $opener );
         if ( $parent <= 0 || !eZContentObjectTreeNode::fetch( $parent, false, false ) )
             return self::fail( 'Tickets cannot be stored right now. Please contact us another way.' );
 
@@ -241,7 +261,7 @@ class ticketsystemService
             $attributes['subscription'] = (string)$v['subscription_id'];
         $object = self::publishNew( array(
             'parent_node_id' => $parent, 'class_identifier' => $this->settings->ticketClass(),
-            'creator_id' => $uid, 'attributes' => $attributes ) );
+            'creator_id' => $creatorId, 'attributes' => $attributes ) );
         if ( !$object instanceof eZContentObject || !$object->attribute( 'main_node_id' ) )
         {
             $db->rollback();
@@ -251,33 +271,115 @@ class ticketsystemService
         $sla = new ticketsystemSla( $this->settings );
         $level = $sla->enabled() ? $sla->levelFor( $accountKey, $v['subscription_id'], $v['priority'] ) : array( 'level' => '', 'fallback' => '' );
         list( $responseDue, $resolveDue ) = $sla->enabled() ? $sla->dues( $now, $level['level'], $v['priority'], $level['fallback'], $v['category'] ) : array( 0, 0 );
-        $files = isset( $in['files'] ) ? (array)$in['files'] : array();
+        $files = isset( $o['files'] ) ? (array)$o['files'] : array();
+        $source = isset( $o['source'] ) && preg_match( '/^[a-z]{1,16}$/', (string)$o['source'] ) ? (string)$o['source'] : 'web';
         $ticket = ticketsystemTicket::create( array(
             'contentobject_id' => (int)$object->attribute( 'id' ), 'node_id' => (int)$object->attribute( 'main_node_id' ),
             'number' => $number, 'prefix' => $prefix, 'year' => $year, 'seq' => $seq,
-            'account_key' => $accountKey, 'opener_id' => $uid, 'subject' => $v['subject'],
+            'account_key' => (string)$accountKey, 'opener_id' => $openerId, 'subject' => $v['subject'],
             'status' => $status, 'category' => $v['category'], 'priority' => $v['priority'],
             'priority_rank' => $this->settings->priorityRank( $v['priority'] ),
-            'subscription_id' => $v['subscription_id'], 'post_count' => 1, 'last_post' => $now, 'last_post_by' => $uid,
-            'last_post_staff' => 0, 'created' => $now, 'modified' => $now, 'resolved' => 0, 'closed' => 0,
-            'source' => isset( $in['source'] ) && preg_match( '/^[a-z]{1,16}$/', (string)$in['source'] ) ? (string)$in['source'] : 'web',
+            'subscription_id' => $v['subscription_id'], 'post_count' => 1, 'last_post' => $now, 'last_post_by' => $creatorId,
+            'last_post_staff' => !empty( $o['staff_post'] ) && $creatorId !== $openerId ? 1 : 0, 'created' => $now, 'modified' => $now,
+            'resolved' => 0, 'closed' => 0, 'source' => $source,
+            'external_id' => isset( $o['external_id'] ) ? mb_substr( (string)$o['external_id'], 0, 64 ) : '',
             'sla_level' => (string)$level['level'], 'response_due' => $responseDue, 'resolve_due' => $resolveDue ) );
         $ticket->store();
-        self::subscribe( (int)$object->attribute( 'main_node_id' ), $uid );
-        self::indexPost( $ticket, $object, $uid, false, $v['body'] );
+        self::subscribe( (int)$object->attribute( 'main_node_id' ), $openerId );
+        if ( $creatorId !== $openerId )
+            self::subscribe( (int)$object->attribute( 'main_node_id' ), $creatorId );
+        self::indexPost( $ticket, $object, $creatorId, !empty( $o['staff_post'] ) && $creatorId !== $openerId, $v['body'] );
         $db->commit();
         if ( $files )
         {
-            $stored = ( new ticketsystemFiles( $this->settings ) )->store( $ticket, $files, (int)$object->attribute( 'id' ), 0, $uid );
+            $stored = ( new ticketsystemFiles( $this->settings ) )->store( $ticket, $files, (int)$object->attribute( 'id' ), 0, $creatorId );
             $ticket->setAttribute( 'attachment_count', count( $stored ) );
             $ticket->store();
         }
-        self::event( $ticket, $uid, 'open', '', $ticket->attribute( 'source' ) );
+        self::event( $ticket, $creatorId, 'open', '', $source );
         $this->autoAssign( $ticket );
         eZContentObject::clearCache( array( (int)$object->attribute( 'id' ) ) );
-        $mail = $this->mailer->sendPost( $ticket, $object, $uid, true, $this->access->isStaff() );
-        return array( 'ok' => true, 'message' => sprintf( 'Ticket %s is open. We sent you a copy by e-mail.', $number ), 'errors' => array(),
-                      'ticket' => $ticket, 'mail' => $mail );
+        $mail = !empty( $o['notify'] ) ? $this->mailer->sendPost( $ticket, $object, $creatorId, true, !empty( $o['staff_post'] ) )
+                                       : array( 'sent' => 0, 'captured' => 0, 'failed' => 0, 'skipped' => 0 );
+        $message = isset( $o['message'] ) ? sprintf( (string)$o['message'], $number ) : sprintf( 'Ticket %s is open. We sent you a copy by e-mail.', $number );
+        return array( 'ok' => true, 'message' => $message, 'errors' => array(), 'ticket' => $ticket, 'mail' => $mail );
+    }
+
+    /**
+     * The customer a staff member may open a ticket for (doc/staff-opened-tickets.md): a user given by id or login,
+     * or the user of a Katalyst customer. Returns array( eZUser|null, account key, message ).
+     *
+     * @param string $who a user id or a login ('' = none)
+     * @param int $katalystCustomerId a Katalyst customer (0 = none)
+     */
+    public function customerFor( $who, $katalystCustomerId = 0 )
+    {
+        $user = null;
+        $key = '';
+        if ( (int)$katalystCustomerId > 0 )
+        {
+            if ( !ticketsystemAccount::katalystAvailable() )
+                return array( null, '', 'Customers of the hosting accounts are not available here.' );
+            $c = expKatalystCustomer::fetch( (int)$katalystCustomerId );
+            if ( !$c )
+                return array( null, '', 'This customer cannot be found.' );
+            $key = 'katalyst:' . (int)$c->attribute( 'id' );
+            if ( (int)$c->attribute( 'user_id' ) > 0 )
+                $user = eZUser::fetch( (int)$c->attribute( 'user_id' ) );
+            if ( !$user instanceof eZUser )
+                return array( null, $key, 'This customer has no user of the site yet, so no ticket can be opened for them.' );
+        }
+        else
+        {
+            $who = trim( (string)$who );
+            if ( $who === '' )
+                return array( null, '', 'Please name the customer: a user id or a login.' );
+            $user = ctype_digit( $who ) ? eZUser::fetch( (int)$who ) : eZUser::fetchByName( $who );
+            if ( !$user instanceof eZUser )
+                return array( null, '', 'No user has this id or login.' );
+        }
+        $uid = (int)$user->attribute( 'contentobject_id' );
+        if ( !$user->isEnabled() || !$user->isRegistered() || $uid === (int)eZINI::instance()->variable( 'UserSettings', 'AnonymousUserID' ) )
+            return array( null, '', 'This user is disabled, so no ticket can be opened for them.' );
+        if ( $key === '' )
+        {
+            $keys = $this->access->account()->keysFor( $uid );
+            $katalyst = array_values( array_filter( $keys, function ( $k ) { return strpos( $k, 'katalyst:' ) === 0; } ) );
+            $key = count( $katalyst ) === 1 ? $katalyst[0] : ticketsystemAccount::userKey( $uid );
+        }
+        return array( $user, $key, '' );
+    }
+
+    /**
+     * Staff open a ticket for a customer (decision 3): the customer is the opener (the ticket is below their user node,
+     * in their account's list), the staff member writes the opening post. $notify: the opening post is mailed to the
+     * customer; either way the customer follows the ticket, so later replies reach them.
+     *
+     * @param array $in subject, body, category, priority, subscription_id, files, user (id or login), customer (Katalyst
+     *                  customer id), notify (bool)
+     */
+    public function openFor( array $in )
+    {
+        if ( !$this->access->isStaff() || !$this->access->may( 'create' ) )
+            return self::fail( 'Only support staff can open tickets for customers.' );
+        list( $errors, $v ) = $this->validateNew( $in );
+        list( $customer, $accountKey, $why ) = $this->customerFor( isset( $in['user'] ) ? $in['user'] : '', isset( $in['customer'] ) ? (int)$in['customer'] : 0 );
+        if ( !$customer )
+            $errors['customer'] = $why;
+        if ( $errors )
+            return self::fail( 'Please check the form.', $errors );
+        if ( $v['subscription_id'] && !( preg_match( '/^katalyst:(\d+)$/', $accountKey, $m ) && class_exists( 'expKatalystAccessService' )
+                                         && expKatalystAccessService::subscriptionForCustomer( (int)$m[1], $v['subscription_id'] ) ) )
+            $v['subscription_id'] = 0;
+        $notify = !empty( $in['notify'] );
+        $r = $this->create( $customer, $accountKey, $v, array(
+            'creator_id' => $this->access->userId(), 'staff_post' => true, 'notify' => $notify, 'source' => 'staff',
+            'files' => isset( $in['files'] ) ? (array)$in['files'] : array(),
+            'message' => $notify ? 'Ticket %s is open for the customer, who got the opening post by e-mail.'
+                                 : 'Ticket %s is open for the customer. No mail was sent; later replies reach them.' ) );
+        if ( $r['ok'] )
+            self::event( $r['ticket'], $this->access->userId(), 'onbehalf', '', $notify ? 'notified' : 'silent' );
+        return $r;
     }
 
     /**
@@ -555,7 +657,7 @@ class ticketsystemService
                 case 'status': return $set->label( $v );
                 case 'priority': return isset( $prios[$v] ) ? $prios[$v] : $v;
                 case 'category': return isset( $cats[$v] ) ? $cats[$v] : $v;
-                case 'assign': case 'claim': case 'unassign': return $name( $v );
+                case 'assign': case 'claim': case 'unassign': case 'watch': case 'unwatch': return $name( $v );
                 default: return (string)$v;
             }
         };

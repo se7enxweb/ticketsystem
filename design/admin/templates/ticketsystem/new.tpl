@@ -9,6 +9,24 @@
     <div class="a4-card-body">
     <form class="a4-form is-wide" method="post" action={'ticketsystem/new'|ezurl} id="ts-new-form" enctype="multipart/form-data">
         <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
+        {if and( is_set( $is_staff ), $is_staff )}
+        {* 1.2: staff open a ticket for a customer (doc/staff-opened-tickets.md) *}
+        <div class="a4-stack" id="ts-for" role="group" aria-labelledby="ts-for-h">
+            <h3 class="a4-h3" id="ts-for-h">{'For a customer'|i18n( 'extension/ticketsystem' )}</h3>
+            {if $for.customer|gt( 0 )}
+            <input type="hidden" name="TicketForCustomer" value="{$for.customer}" />
+            <p class="a4-meta" id="ts-for-label">{'The ticket is opened for: %customer'|i18n( 'extension/ticketsystem',, hash( '%customer', $for.label ) )|wash}</p>
+            {else}
+            <div class="a4-field a4-field-wide">
+                <label for="ts-for-user">{'Customer (user id or login)'|i18n( 'extension/ticketsystem' )}</label>
+                <input class="a4-input" type="text" id="ts-for-user" name="TicketForUser" value="{$for.user|wash}" maxlength="150" autocomplete="off"{if is_set( $field_errors.customer )} aria-invalid="true" aria-describedby="ts-for-error"{else} aria-describedby="ts-for-help"{/if} />
+                <p class="a4-help" id="ts-for-help">{'Leave it empty to open the ticket for yourself. The customer becomes the opener: the ticket is in their list, and you write the opening post.'|i18n( 'extension/ticketsystem' )}</p>
+            </div>
+            {/if}
+            {if is_set( $field_errors.customer )}<p class="a4-field-error" id="ts-for-error">{$field_errors.customer|i18n( 'extension/ticketsystem' )|wash}</p>{/if}
+            <label class="a4-check"><input type="hidden" name="TicketNotify" value="0" /><input type="checkbox" id="ts-for-notify" name="TicketNotify" value="1"{if $for.notify} checked="checked"{/if} /> {'Mail the opening post to the customer'|i18n( 'extension/ticketsystem' )}</label>
+        </div>
+        {/if}
         <div class="a4-field a4-field-wide">
             <label for="ts-subject">{'Subject'|i18n( 'extension/ticketsystem' )}</label>
             <input class="a4-input" type="text" id="ts-subject" name="TicketSubject" value="{$values.subject|wash}" maxlength="200" required="required" autocomplete="off"{if is_set( $field_errors.subject )} aria-invalid="true" aria-describedby="ts-subject-error"{/if} />

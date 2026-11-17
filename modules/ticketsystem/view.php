@@ -11,6 +11,14 @@
  *   TicketSetStatus (TicketStatus), TicketNote (TicketNoteBody, files NoteFiles[]: an internal note),
  *   TicketClaim, TicketAssign (TicketAssignee: a user id, or "none"), TicketPriority (TicketPriorityValue),
  *   TicketQueue (TicketQueueValue), TicketEscalate.
+ * 1.2:
+ * - readers: TicketFollow, TicketUnfollow (e-mail copies of every post);
+ * - who may reply: TicketCcAdd (TicketCcAddress), TicketCcRemove (TicketCcID);
+ * - staff: TicketWatchAdd (TicketWatcher: a staff user id), TicketWatchRemove (TicketWatcherID), TicketMerge
+ *   (TicketMergeInto: the number of the ticket that stays), TicketSplit (TicketSplitPosts[]: reply object ids,
+ *   TicketSplitSubject), TicketTimeRemove (TicketTimeID); with TicketReply and TicketNote: TicketTimeSpent (45, 1:30,
+ *   1h 30m), TicketTimeBillable (1/0, TicketTimeBillableSent marks the checkbox as sent), TicketTimeRemark.
+ * A merged ticket redirects to the ticket it was merged into.
  *
  * @copyright Copyright (C) 2026 7x. All rights reserved.
  * @license GNU General Public License v2.0 (or any later version)
@@ -33,9 +41,35 @@ if ( !$ticket || !$access->canRead( $ticket ) )
     return $Module->handleError( eZError::KERNEL_NOT_FOUND, 'kernel' );
 if ( ctype_digit( $number ) )
     return $Module->redirectTo( '/ticketsystem/view/' . rawurlencode( (string)$ticket->attribute( 'number' ) ) );
+// 1.2: a merged ticket's number leads to the ticket it was merged into (when the reader may read that one)
+if ( (int)$ticket->attribute( 'merged_into' ) > 0 && !( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST' ) )
+{
+    $into = ticketsystemTicket::fetch( (int)$ticket->attribute( 'merged_into' ) );
+    for ( $hops = 0; $into && (int)$into->attribute( 'merged_into' ) > 0 && $hops < 5; $hops++ )
+        $into = ticketsystemTicket::fetch( (int)$into->attribute( 'merged_into' ) );
+    if ( $into && $access->canRead( $into ) )
+    {
+        ticketsystemView::flash( array( ezpI18n::tr( 'extension/ticketsystem', 'Ticket %1 was merged into this ticket.', null, array( '%1' => (string)$ticket->attribute( 'number' ) ) ) ) );
+        return $Module->redirectTo( '/ticketsystem/view/' . rawurlencode( (string)$into->attribute( 'number' ) ) );
+    }
+}
 
 $service = new ticketsystemService( $access, $settings );
 $files = new ticketsystemFiles( $settings );
+$watch = new ticketsystemWatch( $access, $settings );
+$time = new ticketsystemTime( $settings );
+$merge = new ticketsystemMerge( $access, $settings );
+$timeDraft = array( 'spent' => '', 'billable' => null, 'remark' => '' );
+// the time typed with a reply or a note (staff): array( error, minutes, billable or null for the default )
+$timeInput = function () use ( $http, $time, &$timeDraft, $isStaff ) {
+    if ( !$isStaff || !$time->enabled() )
+        return array( '', 0, null );
+    $timeDraft = array( 'spent' => (string)$http->postVariable( 'TicketTimeSpent', '' ),
+                        'billable' => $http->hasPostVariable( 'TicketTimeBillableSent' ) ? (bool)$http->postVariable( 'TicketTimeBillable', 0 ) : null,
+                        'remark' => (string)$http->postVariable( 'TicketTimeRemark', '' ) );
+    list( $err, $min ) = $time->check( $timeDraft['spent'] );
+    return array( $err, $min, $timeDraft['billable'] );
+};
 $back = '/ticketsystem/view/' . rawurlencode( (string)$ticket->attribute( 'number' ) );
 $isStaff = $access->isStaff();
 $errors = array();
@@ -77,9 +111,13 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST
             $errors = $uploadErrors;
             $cannedChosen = (int)$http->postVariable( 'TicketCanned', 0 );
         }
+        else if ( ( $tIn = $timeInput() ) && $tIn[0] !== '' )
+            $fieldErrors = array( 'time' => $tIn[0] );
         else
         {
             $r = $service->reply( $ticket, $draft, (string)$http->postVariable( 'TicketStatus', '' ), $upload, $isStaff ? (int)$http->postVariable( 'TicketCanned', 0 ) : 0 );
+            if ( $r['ok'] && $tIn[1] > 0 )
+                $time->record( $ticket, $access->userId(), $tIn[1], $tIn[2], (int)$r['post']->attribute( 'id' ), 0, $timeDraft['remark'] );
             if ( $r['ok'] )
                 return $done( $r, '#ts-latest' );
             $fieldErrors = array_filter( $r['errors'], 'is_string', ARRAY_FILTER_USE_KEY );
@@ -92,9 +130,13 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST
         list( $upload, $uploadErrors ) = $files->fromUpload( 'NoteFiles' );
         if ( $uploadErrors )
             $errors = $uploadErrors;
+        else if ( ( $tIn = $timeInput() ) && $tIn[0] !== '' )
+            $fieldErrors = array( 'note_time' => $tIn[0] );
         else
         {
             $r = $service->addNote( $ticket, $noteDraft, $upload );
+            if ( $r['ok'] && $tIn[1] > 0 )
+                $time->record( $ticket, $access->userId(), $tIn[1], $tIn[2], 0, (int)$r['note']->attribute( 'id' ), $timeDraft['remark'] );
             if ( $r['ok'] )
                 return $done( $r, '#ts-notes' );
             $fieldErrors = array_filter( $r['errors'], 'is_string', ARRAY_FILTER_USE_KEY );
@@ -116,6 +158,45 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST
         return $done( $service->changeQueue( $ticket, (string)$http->postVariable( 'TicketQueueValue', '' ) ) );
     else if ( $http->hasPostVariable( 'TicketEscalate' ) )
         return $done( $service->escalate( $ticket ) );
+    // 1.2: following, watchers, CC
+    else if ( $http->hasPostVariable( 'TicketFollow' ) )
+        return $done( $watch->follow( $ticket ), '#ts-watch' );
+    else if ( $http->hasPostVariable( 'TicketUnfollow' ) )
+        return $done( $watch->unfollow( $ticket ), '#ts-watch' );
+    else if ( $http->hasPostVariable( 'TicketWatchAdd' ) )
+        return $done( $watch->addWatcher( $ticket, (int)$http->postVariable( 'TicketWatcher', 0 ) ), '#ts-watch' );
+    else if ( $http->hasPostVariable( 'TicketWatchRemove' ) )
+        return $done( $watch->removeWatcher( $ticket, (int)$http->postVariable( 'TicketWatcherID', 0 ) ), '#ts-watch' );
+    else if ( $http->hasPostVariable( 'TicketCcAdd' ) )
+        return $done( $watch->addCc( $ticket, (string)$http->postVariable( 'TicketCcAddress', '' ) ), '#ts-watch' );
+    else if ( $http->hasPostVariable( 'TicketCcRemove' ) )
+        return $done( $watch->removeCc( $ticket, (int)$http->postVariable( 'TicketCcID', 0 ) ), '#ts-watch' );
+    // 1.2: merge, split (staff)
+    else if ( $http->hasPostVariable( 'TicketMerge' ) && $isStaff )
+    {
+        $into = ticketsystemTicket::fetchByNumber( (string)$http->postVariable( 'TicketMergeInto', '' ) );
+        if ( !$into || !$access->canRead( $into ) )
+            return $done( array( 'ok' => false, 'message' => 'There is no ticket with this number.' ), '#ts-merge' );
+        $r = $merge->merge( $ticket, $into );
+        if ( !$r['ok'] )
+            return $done( $r, '#ts-merge' );
+        ticketsystemView::flash( array( $r['message'] ) );
+        return $Module->redirectTo( '/ticketsystem/view/' . rawurlencode( (string)$into->attribute( 'number' ) ) );
+    }
+    else if ( $http->hasPostVariable( 'TicketSplit' ) && $isStaff )
+    {
+        $r = $merge->split( $ticket, (array)$http->postVariable( 'TicketSplitPosts', array() ), (string)$http->postVariable( 'TicketSplitSubject', '' ) );
+        if ( !$r['ok'] )
+            return $done( array( 'ok' => false, 'message' => $r['errors'] ? implode( ' ', array_values( $r['errors'] ) ) : $r['message'] ), '#ts-merge' );
+        ticketsystemView::flash( array( $r['message'] ) );
+        return $Module->redirectTo( '/ticketsystem/view/' . rawurlencode( (string)$r['ticket']->attribute( 'number' ) ) );
+    }
+    else if ( $http->hasPostVariable( 'TicketTimeRemove' ) && $isStaff )
+    {
+        $e = ticketsystemTimeEntry::fetchByID( (int)$http->postVariable( 'TicketTimeID', 0 ) );
+        $ok = $e && $time->remove( $e, $ticket, $access->userId() );
+        return $done( array( 'ok' => $ok, 'message' => $ok ? 'The time entry was removed.' : 'This time entry cannot be removed (it was billed, or it is not of this ticket).' ), '#ts-time' );
+    }
     else
     {
         $action = $http->hasPostVariable( 'TicketResolve' ) ? 'resolve'
@@ -127,6 +208,7 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'POST
 
 $names = array();
 $row = ticketsystemView::deskRow( $ticket, $names, $settings );
+$timeDraft['checked'] = $timeDraft['billable'] === null ? ( $isStaff && $time->enabled() && $time->defaultBillable( $ticket ) ) : (bool)$timeDraft['billable'];
 $staffChoices = array();
 if ( $isStaff )
     foreach ( $set->staffChoices as $s )
@@ -167,4 +249,18 @@ $Result = ticketsystemView::render( $user, 'tickets', 'view', array(
     'ts_errors' => $errors,
     'field_errors' => $fieldErrors,
     'following' => in_array( (int)$ticket->attribute( 'node_id' ), array_map( 'intval', (array)eZSubtreeNotificationRule::fetchNodesForUserID( $access->userId(), false ) ), true ),
+    // 1.2: watchers (staff), CC (readers), time (staff), merge and split (staff)
+    'watchers' => $watch->watchers( $ticket ),
+    'cc' => $watch->ccList( $ticket ),
+    'may_cc' => $watch->mayManageCc( $ticket ),
+    'max_cc' => $watch->maxCc(),
+    'time_enabled' => $isStaff && $time->enabled(),
+    'time_entries' => $isStaff ? $time->entries( $ticket ) : array(),
+    'time_total' => ticketsystemTime::label( (int)$ticket->attribute( 'time_minutes' ) ),
+    'time_billable' => ticketsystemTime::label( (int)$ticket->attribute( 'billable_minutes' ) ),
+    'time_default_billable' => $isStaff && $time->enabled() ? $time->defaultBillable( $ticket ) : false,
+    'time_covered' => $isStaff && $time->enabled() ? $time->coveredBy( (string)$ticket->attribute( 'account_key' ), (int)$ticket->attribute( 'subscription_id' ), (string)$ticket->attribute( 'sla_level' ) ) : '',
+    'time_draft' => $timeDraft,
+    'splittable' => $merge->splittable( $ticket ),
+    'merged_into' => (int)$ticket->attribute( 'merged_into' ),
 ), ticketsystemView::path( (string)$ticket->attribute( 'number' ) ) );

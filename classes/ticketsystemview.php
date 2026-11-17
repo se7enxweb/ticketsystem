@@ -48,6 +48,7 @@ class ticketsystemView
             'last_post_staff' => (bool)$t->attribute( 'last_post_staff' ),
             'account_label' => ticketsystemAccount::label( $t->attribute( 'account_key' ) ),
             'opener_id' => (int)$t->attribute( 'opener_id' ),
+            'merged_into' => (int)$t->attribute( 'merged_into' ), 'source' => (string)$t->attribute( 'source' ),
         );
     }
 

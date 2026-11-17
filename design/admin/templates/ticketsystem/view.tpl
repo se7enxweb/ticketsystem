@@ -161,6 +161,7 @@
         </div>
         {if $attach.enabled}<div class="a4-field a4-field-wide"><label for="ts-note-files">{'Files for staff'|i18n( $tsI )}</label>
             <input class="a4-input" type="file" id="ts-note-files" name="NoteFiles[]" multiple="multiple" accept="{$attach.accept|wash}" /></div>{/if}
+        {if $time_enabled}{include uri='design:ticketsystem/parts/time_fields.tpl' prefix='ts-note' error=first_set( $field_errors.note_time, '' ) draft=$time_draft covered=$time_covered}{/if}
         <div class="a4-actions"><button type="submit" class="a4-btn" name="TicketNote" value="1" id="ts-add-note">{'Save the note'|i18n( $tsI )}</button></div>
     </form>
     </div>
@@ -197,6 +198,7 @@
             <p class="a4-help">{'Up to %count files, at most %size MB each: %types.'|i18n( $tsI,, hash( '%count', $attach.max_files, '%size', $attach.max_mb, '%types', $attach.types ) )|wash}</p>
         </div>
         {/if}
+        {if $time_enabled}{include uri='design:ticketsystem/parts/time_fields.tpl' prefix='ts-reply' error=first_set( $field_errors.time, '' ) draft=$time_draft covered=$time_covered}{/if}
         {if $is_staff}
         <div class="a4-field">
             <label for="ts-reply-status">{'Status after this reply'|i18n( $tsI )}</label>
@@ -229,6 +231,116 @@
         <div class="a4-actions"><button type="submit" class="a4-btn" name="TicketRate" value="1" id="ts-rate-send">{'Send the rating'|i18n( $tsI )}</button></div>
     </form>
     {/if}
+    </div>
+</section>
+{/if}
+
+{* 1.2: following, watchers and CC (doc/watchers.md) *}
+<section class="a4-card" aria-labelledby="ts-a4-watch-h" id="ts-watch">
+    <div class="a4-card-head"><h2 class="a4-card-title a4-h3" id="ts-a4-watch-h">{'Followers and CC'|i18n( $tsI )}</h2>
+        <p class="a4-meta">{'Followers and CC addresses get every post by e-mail; never an internal note.'|i18n( $tsI )}</p></div>
+    <div class="a4-card-body a4-stack">
+        <form class="a4-actions" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl} id="ts-follow-form">
+            <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
+            {if $following}<span class="a4-badge is-ok">{'You follow this ticket'|i18n( $tsI )}</span>
+            <button type="submit" class="a4-btn a4-btn-small" name="TicketUnfollow" value="1" id="ts-unfollow">{'Stop following'|i18n( $tsI )}</button>
+            {else}<button type="submit" class="a4-btn a4-btn-small" name="TicketFollow" value="1" id="ts-follow">{'Follow'|i18n( $tsI )}</button>{/if}
+        </form>
+        {if $is_staff}
+        <div class="a4-table-wrap"><table class="a4-table is-compact" id="ts-watchers">
+            <caption class="a4-sr-only">{'Followers'|i18n( $tsI )}</caption>
+            <thead><tr><th scope="col">{'Follower'|i18n( $tsI )}</th><th scope="col">{'Role'|i18n( $tsI )}</th><th scope="col"><span class="a4-sr-only">{'Actions'|i18n( $tsI )}</span></th></tr></thead>
+            <tbody>
+            {foreach $watchers as $w}
+            <tr><td>{$w.name|wash}{if $w.may_read|not} <span class="a4-badge is-warn">{'no access: gets no mail'|i18n( $tsI )}</span>{/if}</td>
+                <td>{if $w.is_opener}{'opener'|i18n( $tsI )}{elseif $w.is_staff}{'staff'|i18n( $tsI )}{else}{'customer'|i18n( $tsI )}{/if}</td>
+                <td class="a4-end">{if and( $w.is_staff, $w.is_opener|not, $w.user_id|ne( $me ) )}
+                <form method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl}><input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" /><input type="hidden" name="TicketWatcherID" value="{$w.user_id}" />
+                    <button type="submit" class="a4-btn a4-btn-small a4-btn-ghost" name="TicketWatchRemove" value="1">{'Remove'|i18n( $tsI )}</button></form>{/if}</td></tr>
+            {/foreach}
+            </tbody>
+        </table></div>
+        <form class="a4-actions" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl} id="ts-watch-form">
+            <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
+            <label for="ts-watcher">{'Add a staff member'|i18n( $tsI )}</label>
+            <select class="a4-input" id="ts-watcher" name="TicketWatcher">
+            {foreach $staff as $tsK => $tsL}<option value="{$tsK}">{$tsL|wash}</option>{/foreach}
+            </select>
+            <button type="submit" class="a4-btn a4-btn-small" name="TicketWatchAdd" value="1" id="ts-watch-add">{'Add as watcher'|i18n( $tsI )}</button>
+        </form>
+        {/if}
+        <h3 class="a4-h3" id="ts-cc-h">{'CC addresses'|i18n( $tsI )}</h3>
+        {if $cc|count}
+        <ul class="a4-chips" id="ts-cc" aria-labelledby="ts-cc-h">
+        {foreach $cc as $c}<li class="a4-tag"><span>{$c.email|wash}</span>{if $may_cc}
+            <form method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl}><input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" /><input type="hidden" name="TicketCcID" value="{$c.id}" />
+            <button type="submit" class="a4-btn a4-btn-small a4-btn-ghost" name="TicketCcRemove" value="1" aria-label="{'Remove %address'|i18n( $tsI,, hash( '%address', $c.email ) )|wash}">{'Remove'|i18n( $tsI )}</button></form>{/if}</li>{/foreach}
+        </ul>
+        {else}
+        <p class="a4-empty">{'No CC addresses.'|i18n( $tsI )}</p>
+        {/if}
+        {if and( $may_cc, $cc|count|lt( $max_cc ) )}
+        <form class="a4-actions" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl} id="ts-cc-form">
+            <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
+            <label for="ts-cc-address">{'Add a CC address'|i18n( $tsI )}</label>
+            <input class="a4-input" type="email" id="ts-cc-address" name="TicketCcAddress" maxlength="254" autocomplete="off" />
+            <button type="submit" class="a4-btn a4-btn-small" name="TicketCcAdd" value="1" id="ts-cc-add">{'Add'|i18n( $tsI )}</button>
+        </form>
+        <p class="a4-help">{'A CC address only gets copies: it cannot open the ticket and its answers do not become posts.'|i18n( $tsI )}</p>
+        {/if}
+    </div>
+</section>
+
+{if $time_enabled}
+{* 1.2: time tracking (doc/time-tracking.md) *}
+<section class="a4-card" aria-labelledby="ts-a4-time-h" id="ts-time">
+    <div class="a4-card-head"><h2 class="a4-card-title a4-h3" id="ts-a4-time-h">{'Time'|i18n( $tsI )}</h2>
+        <p class="a4-meta">{'%total in all, %billable billable'|i18n( $tsI,, hash( '%total', $time_total, '%billable', $time_billable ) )|wash}{if $time_covered} &middot; {'covered by %level'|i18n( $tsI,, hash( '%level', $time_covered ) )|wash}{/if}</p></div>
+    {if $time_entries|count}
+    <div class="a4-table-wrap"><table class="a4-table is-compact" id="ts-time-entries">
+        <thead><tr><th scope="col">{'Date'|i18n( $tsI )}</th><th scope="col">{'Staff'|i18n( $tsI )}</th><th scope="col" class="a4-num">{'Time'|i18n( $tsI )}</th>
+            <th scope="col">{'Billable'|i18n( $tsI )}</th><th scope="col">{'With'|i18n( $tsI )}</th><th scope="col">{'Remark'|i18n( $tsI )}</th><th scope="col"><span class="a4-sr-only">{'Actions'|i18n( $tsI )}</span></th></tr></thead>
+        <tbody>
+        {foreach $time_entries as $e}
+        <tr><td class="a4-nowrap">{$e.work_date|l10n( 'shortdate' )}</td><td>{$e.user|wash}</td><td class="a4-num">{$e.label|wash}</td>
+            <td>{if $e.billable}<span class="a4-badge is-warn">{'billable'|i18n( $tsI )}</span>{else}{'no'|i18n( $tsI )}{/if}{if $e.billed} <span class="a4-badge is-ok">{'billed'|i18n( $tsI )}</span>{/if}</td>
+            <td>{if $e.note_id}<a href="#ts-note-{$e.note_id}">{'a note'|i18n( $tsI )}</a>{elseif $e.post_id}<a href="#ts-post-{$e.post_id}">{'a reply'|i18n( $tsI )}</a>{/if}</td>
+            <td>{$e.remark|wash}</td>
+            <td class="a4-end">{if $e.billed|not}<form method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl}><input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" /><input type="hidden" name="TicketTimeID" value="{$e.id}" />
+                <button type="submit" class="a4-btn a4-btn-small a4-btn-ghost" name="TicketTimeRemove" value="1">{'Remove'|i18n( $tsI )}</button></form>{/if}</td></tr>
+        {/foreach}
+        </tbody>
+    </table></div>
+    {else}
+    <div class="a4-card-body"><p class="a4-empty">{'No time recorded yet. Record it with a reply or an internal note.'|i18n( $tsI )}</p></div>
+    {/if}
+</section>
+{/if}
+
+{if $is_staff}
+{* 1.2: merge and split (doc/merge-split.md) *}
+<section class="a4-card" aria-labelledby="ts-a4-merge-h" id="ts-merge">
+    <div class="a4-card-head"><h2 class="a4-card-title a4-h3" id="ts-a4-merge-h">{'Merge or split'|i18n( $tsI )}</h2>
+        <p class="a4-meta">{'Only tickets of the same customer account can be merged. Nothing is mailed; both histories record it.'|i18n( $tsI )}</p></div>
+    <div class="a4-card-body a4-stack">
+        <form class="a4-actions" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl} id="ts-merge-form">
+            <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
+            <label for="ts-merge-into">{'Merge this ticket into ticket number'|i18n( $tsI )}</label>
+            <input class="a4-input" type="text" id="ts-merge-into" name="TicketMergeInto" maxlength="32" autocomplete="off" placeholder="{$ticket.number|wash}" />
+            <button type="submit" class="a4-btn a4-btn-small a4-btn-outline-danger" name="TicketMerge" value="1" id="ts-merge-send">{'Merge'|i18n( $tsI )}</button>
+        </form>
+        <p class="a4-help">{'Its posts, files, notes, time and followers move to the other ticket; this number then leads there.'|i18n( $tsI )}</p>
+        {if $splittable|count}
+        <form class="a4-form is-wide" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl} id="ts-split-form">
+            <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
+            <div class="a4-radios" role="group" aria-labelledby="ts-split-h"><p class="a4-label" id="ts-split-h">{'Replies that become a new ticket'|i18n( $tsI )}</p>
+            {foreach $splittable as $sp}<label class="a4-check"><input type="checkbox" name="TicketSplitPosts[]" value="{$sp.id}" /> <span>{$sp.created|l10n( 'shortdatetime' )} &middot; {$sp.author|wash}</span></label>{/foreach}
+            </div>
+            <div class="a4-field a4-field-wide"><label for="ts-split-subject">{'Subject of the new ticket'|i18n( $tsI )}</label>
+                <input class="a4-input" type="text" id="ts-split-subject" name="TicketSplitSubject" maxlength="200" autocomplete="off" /></div>
+            <div class="a4-actions"><button type="submit" class="a4-btn a4-btn-small" name="TicketSplit" value="1" id="ts-split-send">{'Split off'|i18n( $tsI )}</button></div>
+        </form>
+        {/if}
     </div>
 </section>
 {/if}

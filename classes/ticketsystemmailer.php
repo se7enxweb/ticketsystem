@@ -93,6 +93,9 @@ class ticketsystemMailer
         $who = (string)$d['author'] . ( $d['author_is_staff'] ? ' (' . $d['brand'] . ' support)' : '' );
         $intro = $d['is_opening'] ? sprintf( '%s opened ticket %s.', $who, $number ) : sprintf( '%s replied to ticket %s.', $who, $number );
         $notice = $d['own_copy'] ? 'This is a copy of your own message, for your records.' : '';
+        $cc = !empty( $d['cc'] );
+        if ( $cc )
+            $notice = sprintf( 'You were added as CC to ticket %s, so you get a copy of every post.', $number );
         $rows = array(
             array( 'label' => 'Ticket', 'value' => $number ),
             array( 'label' => 'Subject', 'value' => (string)$d['subject'] ),
@@ -103,8 +106,10 @@ class ticketsystemMailer
         if ( (string)$d['priority'] !== '' )
             $rows[] = array( 'label' => 'Priority', 'value' => (string)$d['priority'] );
         $footer = sprintf( 'You get this mail because you follow ticket %s. To answer, open the ticket: %s', $number, (string)$d['url'] );
-        $reference = isset( $d['reference'] ) ? (string)$d['reference'] : '';
-        if ( $reference !== '' )
+        $reference = isset( $d['reference'] ) && !$cc ? (string)$d['reference'] : '';
+        if ( $cc )
+            $footer = sprintf( 'You get this copy as a CC of ticket %s. To stop the copies, ask the person who added you, or the support team.', $number );
+        else if ( $reference !== '' )
             $footer = sprintf( 'You get this mail because you follow ticket %s. Answer this mail, or open the ticket: %s', $number, (string)$d['url'] );
         $rate = isset( $d['rate_url'] ) ? (string)$d['rate_url'] : '';
 
@@ -266,8 +271,54 @@ class ticketsystemMailer
             else
                 $result['failed']++;
         }
-        eZLog::write( sprintf( 'ticket %s post %d: %d sent, %d captured, %d failed, %d skipped', $base['number'], (int)$post->attribute( 'id' ),
-                               $result['sent'], $result['captured'], $result['failed'], $result['skipped'] ), 'ticketsystem.log' );
+        // 1.2: a copy to every CC address (doc/watchers.md): no reply reference, no rating link, never an identity
+        $result['cc'] = 0;
+        foreach ( class_exists( 'ticketsystemWatch' ) ? ticketsystemWatch::ccRows( $t ) : array() as $ccRow )
+        {
+            $address = strtolower( trim( (string)$ccRow->attribute( 'email' ) ) );
+            if ( $address === '' || isset( $seen[$address] ) || !eZMail::validate( $address ) )
+            {
+                $result['skipped']++;
+                continue;
+            }
+            $seen[$address] = true;
+            $c = self::content( $base + array( 'own_copy' => false, 'reference' => '', 'rate_url' => '', 'cc' => true ) );
+            $html = $this->html( $c );
+            if ( $this->captured( $address ) )
+            {
+                $this->capture( $address, $c, $html, $messageId, $root );
+                $result['captured']++;
+                $result['cc']++;
+                continue;
+            }
+            $mail = new eZMail();
+            $mail->setSender( $this->sender(), (string)$this->settings->value( 'MailSettings', 'SenderName', '' ) ?: false );
+            $mail->setReceiver( $address );
+            $reply = trim( (string)$this->settings->value( 'MailSettings', 'ReplyTo', '' ) );
+            if ( $reply !== '' )
+                $mail->setReplyTo( $reply );
+            $mail->setSubject( $c['subject'] );
+            $mail->setMessageID( $messageId );
+            if ( !$isOpening )
+            {
+                $mail->setReferences( $root );
+                $mail->addExtraHeader( 'In-Reply-To', $root );
+            }
+            $mail->addExtraHeader( 'X-Ticket-Number', $base['number'] );
+            if ( class_exists( 'expMailTemplateBody' ) )
+                expMailTemplateBody::setAlternative( $mail, $c['text'], $html );
+            else
+                $mail->setBody( $c['text'] );
+            if ( eZMailTransport::send( $mail ) )
+            {
+                $result['sent']++;
+                $result['cc']++;
+            }
+            else
+                $result['failed']++;
+        }
+        eZLog::write( sprintf( 'ticket %s post %d: %d sent, %d captured, %d failed, %d skipped, %d cc', $base['number'], (int)$post->attribute( 'id' ),
+                               $result['sent'], $result['captured'], $result['failed'], $result['skipped'], $result['cc'] ), 'ticketsystem.log' );
         return $result;
     }
 

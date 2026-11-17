@@ -163,6 +163,37 @@
 {include uri='design:ticketsystem/parts/sla.tpl' sla=$sla ticket=$ticket}
 {/if}
 
+{* 1.2: e-mail copies: following and CC addresses (doc/watchers.md) *}
+<section class="ktl-card ts-card" aria-labelledby="ts-watch-h" id="ts-watch">
+    <div class="ktl-card-head ts-card-head"><h2 class="ktl-h2 ts-h2" id="ts-watch-h"><i class="fa-solid fa-envelope ktl-icon" aria-hidden="true"></i>{'E-mail copies'|i18n( $tsI )}</h2></div>
+    <form class="ktl-form ts-form" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl} id="ts-follow-form">
+        <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
+        {if $following}<p>{'You get every post of this ticket by e-mail.'|i18n( $tsI )}</p>
+        <p class="ktl-actions ts-actions"><button type="submit" class="ktl-btn is-ghost ts-btn is-ghost" name="TicketUnfollow" value="1" id="ts-unfollow">{'Stop the e-mails'|i18n( $tsI )}</button></p>
+        {else}<p>{'You do not get the posts of this ticket by e-mail.'|i18n( $tsI )}</p>
+        <p class="ktl-actions ts-actions"><button type="submit" class="ktl-btn ts-btn" name="TicketFollow" value="1" id="ts-follow">{'Follow by e-mail'|i18n( $tsI )}</button></p>{/if}
+    </form>
+    {if or( $cc|count, $may_cc )}
+    <h3 class="ts-h3" id="ts-cc-h">{'Copies to others (CC)'|i18n( $tsI )}</h3>
+    {if $cc|count}
+    <ul class="ts-cc" id="ts-cc" aria-labelledby="ts-cc-h">
+    {foreach $cc as $c}<li>{$c.email|wash}{if $may_cc}
+        <form class="ts-inline-form" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl}><input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" /><input type="hidden" name="TicketCcID" value="{$c.id}" />
+        <button type="submit" class="ktl-btn is-ghost ts-btn is-ghost" name="TicketCcRemove" value="1" aria-label="{'Remove %address'|i18n( $tsI,, hash( '%address', $c.email ) )|wash}">{'Remove'|i18n( $tsI )}</button></form>{/if}</li>{/foreach}
+    </ul>
+    {/if}
+    {if and( $may_cc, $cc|count|lt( $max_cc ) )}
+    <form class="ktl-form ts-form" method="post" action={concat( 'ticketsystem/view/', $ticket.number )|ezurl} id="ts-cc-form">
+        <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
+        <div class="ktl-field ts-field"><label for="ts-cc-address">{'Add an e-mail address'|i18n( $tsI )}</label>
+            <input class="ktl-input ts-input" type="email" id="ts-cc-address" name="TicketCcAddress" maxlength="254" autocomplete="email" aria-describedby="ts-cc-help" />
+            <p class="ts-small ts-muted" id="ts-cc-help">{'It gets a copy of every new post. It cannot open the ticket, and answers from it are not added.'|i18n( $tsI )}</p></div>
+        <p class="ktl-actions ts-actions"><button type="submit" class="ktl-btn ts-btn" name="TicketCcAdd" value="1" id="ts-cc-add">{'Add'|i18n( $tsI )}</button></p>
+    </form>
+    {/if}
+    {/if}
+</section>
+
 {if or( $may_rate, and( $rating.enabled, $rating.score|gt( 0 ) ) )}
 <section class="ktl-card ts-card" aria-labelledby="ts-rate-h" id="ts-rate">
     <div class="ktl-card-head ts-card-head"><h2 class="ktl-h2 ts-h2" id="ts-rate-h"><i class="fa-solid fa-star ktl-icon" aria-hidden="true"></i>{'How did we do?'|i18n( $tsI )}</h2></div>

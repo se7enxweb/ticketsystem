@@ -13,6 +13,17 @@
 {case match='note'}{'wrote an internal note'|i18n( 'extension/ticketsystem' )}{/case}
 {case match='rate'}{'rated the ticket'|i18n( 'extension/ticketsystem' )}: {$event.new|wash} / 5{/case}
 {case match='mailin'}{'replied by e-mail'|i18n( 'extension/ticketsystem' )}{/case}
+{case match='merge'}{'merged ticket %number into this one'|i18n( 'extension/ticketsystem',, hash( '%number', $event.new ) )|wash}{/case}
+{case match='merged'}{'merged it into ticket %number'|i18n( 'extension/ticketsystem',, hash( '%number', $event.new ) )|wash}{/case}
+{case match='split'}{'split replies off into ticket %number'|i18n( 'extension/ticketsystem',, hash( '%number', $event.new ) )|wash}{/case}
+{case match='splitfrom'}{'split it off ticket %number'|i18n( 'extension/ticketsystem',, hash( '%number', $event.new ) )|wash}{/case}
+{case match='watch'}{'added a follower'|i18n( 'extension/ticketsystem' )}{if $event.new} ({$event.new|wash}){/if}{/case}
+{case match='unwatch'}{'removed a follower'|i18n( 'extension/ticketsystem' )}{if $event.old} ({$event.old|wash}){/if}{/case}
+{case match='cc'}{'added a CC address'|i18n( 'extension/ticketsystem' )}{/case}
+{case match='uncc'}{'removed a CC address'|i18n( 'extension/ticketsystem' )}{/case}
+{case match='time'}{'recorded time'|i18n( 'extension/ticketsystem' )}: {$event.new|wash}{/case}
+{case match='untime'}{'removed a time entry'|i18n( 'extension/ticketsystem' )} ({$event.old|wash} min){/case}
+{case match='onbehalf'}{'opened it for the customer'|i18n( 'extension/ticketsystem' )} ({$event.new|wash}){/case}
 {case match='import'}{'imported it'|i18n( 'extension/ticketsystem' )} ({$event.new|wash}){/case}
 {case}{$event.kind|wash}{/case}
 {/switch}

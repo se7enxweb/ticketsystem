@@ -25,7 +25,9 @@ $ViewList['list'] = array(
 $ViewList['new'] = array(
     'script' => 'new.php',
     'default_navigation_part' => 'ezticketsystemnavigationpart',
-    'params' => array() );
+    'params' => array(),
+    // 1.2, staff: the customer a ticket is opened for (doc/staff-opened-tickets.md)
+    'unordered_params' => array( 'user' => 'user', 'customer' => 'customer' ) );
 $ViewList['view'] = array(
     'script' => 'view.php',
     'default_navigation_part' => 'ezticketsystemnavigationpart',
@@ -51,6 +53,13 @@ $ViewList['canned'] = array(
     'default_navigation_part' => 'ezticketsystemnavigationpart',
     'params' => array(),
     'unordered_params' => array( 'edit' => 'edit' ) );
+// 1.2: time tracking report and CSV (ticketsystem/report; doc/time-tracking.md)
+$ViewList['time'] = array(
+    'script' => 'time.php',
+    'functions' => array( 'report' ),
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
+    'params' => array(),
+    'unordered_params' => array( 'from' => 'from', 'to' => 'to', 'account' => 'account', 'user' => 'user', 'billable' => 'billable', 'billed' => 'billed', 'format' => 'format' ) );
 $ViewList['settings'] = array(
     'script' => 'settings.php',
     'default_navigation_part' => 'ezticketsystemnavigationpart',

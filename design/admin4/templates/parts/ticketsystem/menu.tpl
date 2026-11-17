@@ -29,6 +29,7 @@
     'canned',     'Canned replies'|i18n( $tsI ),
     'sla',        'SLA and escalation'|i18n( $tsI ),
     'satisfaction', 'Satisfaction'|i18n( $tsI ),
+    'time',       'Time'|i18n( $tsI ),
     'queues',     'Queues and categories'|i18n( $tsI ),
     'mail',       'Mail, files and ratings'|i18n( $tsI ),
     'mailin',     'Mail-in'|i18n( $tsI ),

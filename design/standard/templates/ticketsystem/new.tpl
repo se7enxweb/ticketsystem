@@ -16,6 +16,21 @@
     <div class="ktl-card-head ts-card-head"><h2 class="ktl-h2 ts-h2" id="ts-new-h"><i class="fa-solid fa-pen ktl-icon" aria-hidden="true"></i>{'Your request'|i18n( $tsI )}</h2></div>
     <form class="ktl-form ts-form" method="post" action={'ticketsystem/new'|ezurl} id="ts-new-form" enctype="multipart/form-data">
         <input type="hidden" name="{$ts_token_field|wash}" value="{$ts_token|wash}" />
+        {if and( is_set( $is_staff ), $is_staff )}
+        {* 1.2: staff open a ticket for a customer (doc/staff-opened-tickets.md) *}
+        <div class="ktl-field ts-field" id="ts-for">
+            {if $for.customer|gt( 0 )}
+            <input type="hidden" name="TicketForCustomer" value="{$for.customer}" />
+            <p id="ts-for-label">{'The ticket is opened for: %customer'|i18n( $tsI,, hash( '%customer', $for.label ) )|wash}</p>
+            {else}
+            <label for="ts-for-user">{'For a customer (user id or login)'|i18n( $tsI )}</label>
+            <input class="ktl-input ts-input" type="text" id="ts-for-user" name="TicketForUser" value="{$for.user|wash}" maxlength="150" autocomplete="off" aria-describedby="ts-for-help" />
+            <p class="ts-small ts-muted" id="ts-for-help">{'Leave it empty to open the ticket for yourself.'|i18n( $tsI )}</p>
+            {/if}
+            {if is_set( $field_errors.customer )}<p class="ktl-field-error ts-field-error" id="ts-for-error">{$field_errors.customer|i18n( $tsI )|wash}</p>{/if}
+            <label><input type="hidden" name="TicketNotify" value="0" /><input type="checkbox" id="ts-for-notify" name="TicketNotify" value="1"{if $for.notify} checked="checked"{/if} /> {'Mail the opening post to the customer'|i18n( $tsI )}</label>
+        </div>
+        {/if}
         <div class="ktl-field ts-field">
             <label for="ts-subject">{'Subject'|i18n( $tsI )}</label>
             <input class="ktl-input ts-input{if is_set( $field_errors.subject )} is-invalid{/if}" type="text" id="ts-subject" name="TicketSubject" value="{$values.subject|wash}" maxlength="200" required autocomplete="off"{if is_set( $field_errors.subject )} aria-invalid="true" aria-describedby="ts-subject-error"{/if} />

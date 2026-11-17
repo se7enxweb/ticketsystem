@@ -33,6 +33,7 @@
     <li><a href={'ticketsystem/reports'|ezurl}>{'Reports'|i18n( $tsI )}</a></li>
     <li><a href={'ticketsystem/search'|ezurl}>{'Search'|i18n( $tsI )}</a></li>
     <li><a href={'ticketsystem/satisfaction'|ezurl}>{'Satisfaction'|i18n( $tsI )}</a></li>
+    <li><a href={'ticketsystem/time'|ezurl}>{'Time'|i18n( $tsI )}</a></li>
     {/if}
     {if $tsStaff}
     <li><a href={'ticketsystem/canned'|ezurl}>{'Canned replies'|i18n( $tsI )}</a></li>
