@@ -8,6 +8,9 @@ ezoracle) and MongoDB.
 `ticketsystemSchema::definition()` is the only definition of the tables, in the kernel's generic schema format. The
 installer (`bin/php/install.php`) creates a missing table with the kernel's schema handler of the database, and adds
 the columns (and their indexes) that an older release's table lacks, with the handler's own `ALTER TABLE` statements.
+On MongoDB a collection has no columns to add: the installer sets each new field to its default on the documents of
+an older release that lack it (so `assignee_id = 0` or `source = 'web'` finds a 1.0 ticket as on the other databases)
+and creates the indexes the collection lacks; the dry run lists both.
 `bin/php/install.php --write-schema-files` writes from it:
 
 | File | For |
@@ -40,7 +43,9 @@ MongoDB (an atomic `$inc`, as there is no row lock): single-table `SELECT` with 
 not a `CASE`), `COUNT(*) AS n` and `MAX(...) AS m` alone, paging by the driver's offset and limit; no `JOIN`, no `GROUP
 BY` (counts per status are one count each), no `UPDATE`/`DELETE` without a `WHERE`. Rows are written through
 `eZPersistentObject` with the id left to the database. On Oracle the column `number` is quoted by the driver
-(`settings/ezoracle.ini.append.php`, `[QuotedIdentifierSettings] TypeColumnNames[]=number`).
+(`settings/ezoracle.ini.append.php`, `[QuotedIdentifierSettings] TypeColumnNames[]=number`). That setting is on
+ezoracle's main branch and not yet in a release of ezoracle (the latest, 2.3.13, does not have it), so Oracle needs
+ezoracle from main until its next release.
 
 ## Proof
 

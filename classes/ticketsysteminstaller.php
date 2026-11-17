@@ -100,6 +100,18 @@ class ticketsystemInstaller
                     }
                 }
             }
+            // MongoDB: the documents of an older release get the new fields' defaults, the collection its new indexes
+            if ( $engine === 'mongodb' )
+            {
+                $upgrade = ticketsystemSchema::mongoUpgrade( $table, $db );
+                foreach ( $upgrade['fields'] as $field => $info )
+                    $this->line( "table $table: set $field to " . var_export( $info['default'], true ) . " in {$info['count']} documents", true );
+                foreach ( $upgrade['indexes'] as $name => $idef )
+                    $this->line( "table $table: add index $name", true );
+                if ( !$this->dryRun && ( $upgrade['fields'] || $upgrade['indexes'] ) )
+                    foreach ( ticketsystemSchema::applyMongoUpgrade( $table, $upgrade, $db ) as $error )
+                        $this->fail( $error );
+            }
         }
         if ( $missing && !$this->dryRun )
         {

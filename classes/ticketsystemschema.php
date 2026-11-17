@@ -409,6 +409,84 @@ class ticketsystemSchema
     }
 
     /**
+     * MongoDB's counterpart of missingColumns(): a collection has no columns to add, so the documents of an older
+     * release simply lack the new fields, and a query such as assignee_id = 0 or source = 'web' would not find them.
+     * Returns the fields of definition() that documents lack, with the default of each and how many documents lack
+     * it, and the indexes of definition() the collection lacks (by name, as the kernel's schema handler names them).
+     * Empty on every other engine.
+     *
+     * @return array array( 'fields' => field => array( 'default' => mixed, 'count' => int ), 'indexes' => name => index )
+     */
+    public static function mongoUpgrade( $table, $db = null )
+    {
+        $db = $db ?: eZDB::instance();
+        $out = array( 'fields' => array(), 'indexes' => array() );
+        $def = self::definition();
+        if ( !isset( $def[$table] ) || self::engineOf( $db ) !== 'mongodb' )
+            return $out;
+        $collection = $db->getClient()->selectCollection( $db->DB, $table );
+        foreach ( $def[$table]['fields'] as $field => $fdef )
+        {
+            // no default to give: the id (the sequence) and the text columns (null, which a missing field reads as)
+            if ( $fdef['type'] === 'auto_increment' || !isset( $fdef['default'] ) )
+                continue;
+            $count = (int)$collection->countDocuments( array( $field => array( '$exists' => false ) ) );
+            if ( $count > 0 )
+                $out['fields'][$field] = array( 'default' => $fdef['type'] === 'int' ? (int)$fdef['default'] : (string)$fdef['default'],
+                                                'count' => $count );
+        }
+        $have = array();
+        foreach ( $collection->listIndexes() as $index )
+            $have[$index->getName()] = true;
+        foreach ( $def[$table]['indexes'] as $name => $idef )
+            if ( !isset( $have[$name] ) )
+                $out['indexes'][$name] = $idef;
+        return $out;
+    }
+
+    /**
+     * Applies mongoUpgrade(): sets each missing field to its default on the documents without it, and creates the
+     * missing indexes as the kernel's schema handler does (unique for primary and unique ones).
+     *
+     * @return string[] what failed, empty when all went well
+     */
+    public static function applyMongoUpgrade( $table, array $upgrade, $db = null )
+    {
+        $db = $db ?: eZDB::instance();
+        $collection = $db->getClient()->selectCollection( $db->DB, $table );
+        $errors = array();
+        foreach ( $upgrade['fields'] as $field => $info )
+        {
+            try
+            {
+                $collection->updateMany( array( $field => array( '$exists' => false ) ), array( '$set' => array( $field => $info['default'] ) ) );
+            }
+            catch ( Exception $e )
+            {
+                $errors[] = "$table.$field: " . $e->getMessage();
+            }
+        }
+        foreach ( $upgrade['indexes'] as $name => $idef )
+        {
+            $keys = array();
+            foreach ( $idef['fields'] as $f )
+                $keys[is_array( $f ) ? $f['name'] : $f] = 1;
+            $options = array( 'name' => $name );
+            if ( $idef['type'] === 'primary' || $idef['type'] === 'unique' )
+                $options['unique'] = true;
+            try
+            {
+                $collection->createIndex( $keys, $options );
+            }
+            catch ( Exception $e )
+            {
+                $errors[] = "$table index $name: " . $e->getMessage();
+            }
+        }
+        return $errors;
+    }
+
+    /**
      * The columns of definition() an existing table lacks (an installation of an older release), and the
      * statements that add them and their indexes, from the engine's schema handler.
      *
