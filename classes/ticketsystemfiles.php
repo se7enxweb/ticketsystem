@@ -142,12 +142,21 @@ class ticketsystemFiles
         $out = array();
         $rc = 1;
         @exec( $line . ' 2>&1', $out, $rc );
-        if ( $rc !== 0 )
-        {
-            eZLog::write( 'attachment refused by the scanner (exit ' . (int)$rc . ')', 'ticketsystem.log' );
-            return 'The file did not pass the virus check.';
-        }
-        return '';
+        return self::scanVerdict( $rc );
+    }
+
+    /**
+     * The answer to a scanner's exit code (pure apart from the log): 0 clean (''); 1 a virus was found (ClamAV and most
+     * scanners); anything else the scanner failed, and the file is refused as well, since it could not be checked.
+     */
+    public static function scanVerdict( $rc )
+    {
+        $rc = (int)$rc;
+        if ( $rc === 0 )
+            return '';
+        if ( class_exists( 'eZLog' ) )
+            eZLog::write( 'attachment refused by the scanner (exit ' . $rc . ( $rc === 1 ? ': infected' : ': scanner error' ) . ')', 'ticketsystem.log' );
+        return $rc === 1 ? 'The file did not pass the virus check.' : 'Files cannot be checked right now. Please try again later.';
     }
 
     /**
