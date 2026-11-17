@@ -49,7 +49,16 @@ All in `settings/ticketsystem.ini`, each with a comment there. Override them in
 | | MaxTextMatches | 2000 | posts and notes matched per search text |
 | CannedSettings | Macros | enabled | `disabled`: canned replies change nothing but the text ([canned-replies.md](canned-replies.md)) |
 | | MaxLength | 20000 | characters of a canned reply |
+| AssignmentSettings | StaffGroup | Technical Support Group | the user group whose members can be assigned ([assignment.md](assignment.md)) |
+| | ClaimOnReply | enabled | a staff reply to an unassigned ticket assigns it to the replier |
+| | AutoAssign[] | none | `<category>=enabled`: round-robin for that queue |
+| AttachmentSettings | Enabled | enabled | files of tickets, replies and notes ([attachments.md](attachments.md)) |
+| | StorageDirectory | var/ticketsystem/attachments | absolute or relative to the installation; outside the web root in production |
+| | MaxFileSize, MaxFiles | 25, 5 | MB per file, files per post |
+| | AllowedExtensions[] | pdf, png, jpg, ... eml | the extensions accepted; the content must match |
+| | ScanCommand, RequireScan | empty, disabled | the virus scanner (`%file`; exit 0 = clean); refuse every file without one |
 | LimitSettings | MaxSubjectLength, MaxBodyLength | 200, 50000 | characters |
 | | MaxOpenPerHour | 10 | new tickets per user and hour |
 | | ListLimit | 25 | tickets per page |
 | | SearchLimit | 50 | search results per page |
+| | MaxNoteLength | 20000 | characters of an internal note ([notes.md](notes.md)) |

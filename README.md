@@ -21,6 +21,14 @@ PHP 8.0 to 8.5, and it was cleaned up, re-documented and extended.
 - **Mail copies of every post**, HTML and text, threaded per ticket, sent from one support address.
 - **Exponential notification subscriptions**: the opener and everyone who posts follow the ticket node.
 - **Technical Support Group**: a user group and the role *Ticket Support* for support staff.
+- **Assignment** (1.1): staff take a ticket or assign it, optional round-robin per queue; the staff list filters
+  "assigned to me" and "unassigned"; staff change the priority and the queue of an open ticket.
+- **Internal notes** (1.1): for staff only; never shown to a customer, never mailed, never in a customer's search or
+  an export.
+- **Attachments** (1.1): files of tickets, replies and notes, checked (size, type, content, an optional virus
+  scanner), stored outside the public storage, served only to readers of the ticket.
+- **Every database of the kernel** (1.1): MySQL/MariaDB, PostgreSQL, SQLite, Oracle and MongoDB, from one schema
+  definition; the installer also upgrades the tables of an older release.
 - **Mobile-first views**, light and dark, with no inline CSS; inside the Katalyst customer console they use its
   frame and components.
 - The original views of ticketsystem 1.x in the administration are kept (fixed for Exponential 6).
@@ -51,6 +59,10 @@ Then activate the extension and run the installer; see [doc/install.md](doc/inst
 | Mail | [doc/mail.md](doc/mail.md) |
 | Design and the Katalyst console | [doc/design.md](doc/design.md) |
 | Every setting | [doc/settings.md](doc/settings.md) |
+| Assignment, priority and queue | [doc/assignment.md](doc/assignment.md) |
+| Internal notes | [doc/notes.md](doc/notes.md) |
+| Attachments | [doc/attachments.md](doc/attachments.md) |
+| Databases | [doc/databases.md](doc/databases.md) |
 | Search | [doc/search.md](doc/search.md) |
 | Reports and the CSV export | [doc/reports.md](doc/reports.md) |
 | Canned replies and macros | [doc/canned-replies.md](doc/canned-replies.md) |

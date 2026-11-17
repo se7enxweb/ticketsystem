@@ -26,7 +26,10 @@
      (`ticket_number`, `subscription`);
    - the user group "Technical Support Group" below the Users root with the role "Ticket Support";
    - the role "Ticket Customer", assigned to every group of `--customer-group` (comma separated).
-   Run it again after an update; it ends with PASS or FAIL.
+   Run it again after an update; it ends with PASS or FAIL. Coming from 1.0, it adds the columns 1.1 needs to
+   `ticketsystem_ticket`, creates the new tables, completes the options of the ticket class's selections from the
+   settings and indexes the posts for the staff search; back up the `ticketsystem_*` tables first
+   ([databases.md](databases.md)).
 5. Settings: copy what you change from `settings/ticketsystem.ini` to `settings/override/ticketsystem.ini.append.php`
    (at least `[NumberSettings] Prefix` and `[MailSettings] Sender`), see [settings.md](settings.md).
 6. Clear the caches (`php bin/php/ezcache.php --clear-all`) and reload PHP-FPM.

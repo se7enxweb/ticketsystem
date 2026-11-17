@@ -42,6 +42,10 @@ A role whose policies differ is completed (missing policies added); nothing else
   reach them.
 - The views check the scope for every ticket; a ticket out of reach answers 404.
 - Mails go only to followers who may still read the ticket (and to the poster).
+- Internal notes are for staff (`manage`) only: not in the customer's views, mails, search or exports
+  ([notes.md](notes.md)); the file of a note is served to staff only.
+- Files (`ticketsystem/file/<id>`) are served only to users who may read the ticket ([attachments.md](attachments.md)).
+- Assigning, claiming, the priority and the queue need `manage` ([assignment.md](assignment.md)).
 
 ## Staff pages, notes and exports
 
