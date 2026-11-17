@@ -81,3 +81,10 @@ $FunctionList['csat_latest'] = array( 'name' => 'csat_latest', 'operation_types'
                                       'parameter_type' => 'standard',
                                       'parameters' => array( $tsParam( 'from', 'integer', false, 0 ), $tsParam( 'to', 'integer', false, 0 ),
                                                              $tsParam( 'offset', 'integer', false, 0 ), $tsParam( 'limit', 'integer', false, 50 ) ) );
+
+// The support card of a customer's home (doc/views.md "The customer's support summary"): the signed-in user's own
+// tickets within their read scope, as ticketsystem/list shows them to a customer
+//   fetch( 'ticketsystem', 'customer_summary', hash( 'limit', 5, 'subscription_id', 0 ) )
+$FunctionList['customer_summary'] = array( 'name' => 'customer_summary', 'operation_types' => array( 'read' ), 'call_method' => $tsCall( 'customerSummary' ),
+                                           'parameter_type' => 'standard',
+                                           'parameters' => array( $tsParam( 'limit', 'integer', false, 5 ), $tsParam( 'subscription_id', 'integer', false, 0 ) ) );

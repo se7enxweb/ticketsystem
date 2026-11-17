@@ -3,7 +3,7 @@
 | Address | Policy | What it does |
 |---|---|---|
 | `ticketsystem/list` | `read` | The tickets the user may read, newest activity first. View parameters: `(status)/open` (default: not resolved or closed), `(status)/done`, `(status)/all`; `(offset)/<n>`. Filters are view parameters, never GET parameters. |
-| `ticketsystem/new` | `create` | The form of a new ticket: subject, category, priority, the site it is about (Katalyst), the message. |
+| `ticketsystem/new` | `create` | The form of a new ticket: subject, category, priority, the site it is about (Katalyst), the message. `(subscription)/<id>` preselects the site when it is one of the account's own (anything else is ignored), for "Get help with this service". |
 | `ticketsystem/view/<number>` | `read` | One ticket with every post, oldest first, the reply form, the details and the status actions. A ticket the user may not read answers **404**, like a number that does not exist. `ticketsystem/view/<index id>` redirects to the number. |
 | `ticketsystem/import` | `manage` | The WHMCS import ([import-whmcs.md](import-whmcs.md)): the export's counts, a dry run, what was imported; upload an export (`TicketImportUpload`, file `ImportFile`) and run the import (`TicketImportRun`). Counts only. |
 | `ticketsystem/mailin` | `manage` | Reply by e-mail ([mail-in.md](mail-in.md)): the settings in use and the latest inbound mails (time, result, ticket). |
@@ -33,6 +33,24 @@ Limits: `[LimitSettings]` (subject length, message length, new tickets per user 
 
 The views check their policy themselves: a visitor who is not signed in is sent to the sign-in page and back to the
 view afterwards; a signed-in user without the policy gets the kernel's "Access denied".
+
+
+## The customer's support summary (1.1)
+
+`fetch( 'ticketsystem', 'customer_summary', hash( 'limit', 5, 'subscription_id', 0 ) )` gives a customer's home (the
+Katalyst account home, the "my" portal) what `ticketsystem/list` shows that customer, within the same read scope
+(`ticketsystemAccess::listConditions()`): no other ticket is ever counted or listed.
+
+| Key | What |
+|---|---|
+| `counts` | `open` (not resolved or closed), `waiting` (the status of the role `StaffReply`: waiting on the customer), `to_rate` (resolved or closed, opened by the user, no rating yet), `done`, `all` |
+| `open` | up to `limit` rows of `ticketsystemView::row()` plus `waiting`, `subscription_id`, `rating`: the tickets waiting on the customer first, then the newest activity |
+| `to_rate` | resolved tickets the customer may still rate (`ticketsystemService::mayRate()`), each rated on `ticketsystem/view/<number>#ts-rate` |
+| `may_create` | the user has `ticketsystem/create` |
+| `rating` | `[CSATSettings] Enabled` |
+
+`subscription_id` limits every list and count to the tickets about one site. Without `ticketsystem/read` the result
+is `false`.
 
 ## The administration: the tab TicketSystem
 

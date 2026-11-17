@@ -26,8 +26,9 @@ $ViewList['new'] = array(
     'script' => 'new.php',
     'default_navigation_part' => 'ezticketsystemnavigationpart',
     'params' => array(),
-    // 1.2, staff: the customer a ticket is opened for (doc/staff-opened-tickets.md)
-    'unordered_params' => array( 'user' => 'user', 'customer' => 'customer' ) );
+    // 1.2, staff: the customer a ticket is opened for (doc/staff-opened-tickets.md); (subscription)/<id>: the site the
+    // new ticket is about, preselected (one of the account's own; anything else is ignored)
+    'unordered_params' => array( 'user' => 'user', 'customer' => 'customer', 'subscription' => 'subscription' ) );
 $ViewList['view'] = array(
     'script' => 'view.php',
     'default_navigation_part' => 'ezticketsystemnavigationpart',

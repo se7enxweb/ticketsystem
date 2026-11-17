@@ -146,4 +146,66 @@ class ticketsystemFunctionCollection
             return array( 'result' => null );
         return array( 'result' => ( new ticketsystemCsat() )->latest( array( 'from' => (int)$from, 'to' => (int)$to ), (int)$offset, min( 200, max( 1, (int)$limit ) ) ) );
     }
+
+    // ------------------------------------------------------------------------------- the customer's summary
+
+    /**
+     * The support card of a customer's home (doc/views.md): the tickets the signed-in user reads in ticketsystem/list,
+     * within their read scope (ticketsystemAccess::listConditions()). False without ticketsystem/read.
+     *
+     * result: counts (open, waiting, to_rate, done, all), open (rows of ticketsystemView::row() plus waiting,
+     * subscription_id; those waiting on the customer first, then newest activity), to_rate (resolved tickets the
+     * customer may still rate), may_create, rating (the ratings are on).
+     *
+     * @param int $limit rows of each list (1-50)
+     * @param int $subscriptionId only the tickets about this site (0: all)
+     */
+    public static function customerSummary( $limit = 5, $subscriptionId = 0 )
+    {
+        $access = self::access();
+        if ( !self::allowed( $access, 'read' ) )
+            return array( 'result' => false );
+        $settings = ticketsystemSettings::instance();
+        $set = $settings->statusSet();
+        $limit = max( 1, min( 50, (int)$limit ) );
+        $rating = $settings->enabled( 'CSATSettings', 'Enabled' );
+        $out = array( 'counts' => array( 'open' => 0, 'waiting' => 0, 'to_rate' => 0, 'done' => 0, 'all' => 0 ),
+                      'open' => array(), 'to_rate' => array(), 'may_create' => $access->may( 'create' ), 'rating' => $rating );
+        $extra = (int)$subscriptionId > 0 ? ' AND subscription_id = ' . (int)$subscriptionId : '';
+        $open = $access->listConditions( $set->active() );
+        if ( $open === null )
+            return array( 'result' => $out );
+        $waitingStatus = $set->role( 'StaffReply' );
+        $waiting = $access->listConditions( array( $waitingStatus ) ) . $extra;
+        $row = function ( ticketsystemTicket $t ) use ( $settings, $waitingStatus ) {
+            $r = ticketsystemView::row( $t, $settings );
+            return $r + array( 'waiting' => $r['status'] === $waitingStatus || ( $r['last_post_staff'] && !$r['done'] ),
+                               'subscription_id' => (int)$t->attribute( 'subscription_id' ), 'rating' => (int)$t->attribute( 'rating' ) );
+        };
+        $seen = array();
+        foreach ( ticketsystemTicket::fetchWhere( $waiting, 0, $limit ) as $t )
+        {
+            $seen[(int)$t->attribute( 'id' )] = true;
+            $out['open'][] = $row( $t );
+        }
+        if ( count( $out['open'] ) < $limit )
+            foreach ( ticketsystemTicket::fetchWhere( $open . $extra, 0, $limit ) as $t )
+                if ( !isset( $seen[(int)$t->attribute( 'id' )] ) && count( $out['open'] ) < $limit )
+                    $out['open'][] = $row( $t );
+        $out['counts']['open'] = ticketsystemTicket::countWhere( $open . $extra );
+        $out['counts']['waiting'] = ticketsystemTicket::countWhere( $waiting );
+        $out['counts']['done'] = ticketsystemTicket::countWhere( $access->listConditions( $set->done ) . $extra );
+        $out['counts']['all'] = ticketsystemTicket::countWhere( $access->listConditions() . $extra );
+        if ( $rating )
+        {
+            // the customer rates a ticket they opened or reply on (ticketsystemService::mayRate), once per ticket here
+            $unrated = $access->listConditions( $set->done ) . $extra . ' AND rated = 0 AND opener_id = ' . (int)$access->userId();
+            $service = new ticketsystemService( $access, $settings );
+            foreach ( ticketsystemTicket::fetchWhere( $unrated, 0, $limit ) as $t )
+                if ( $service->mayRate( $t ) )
+                    $out['to_rate'][] = $row( $t );
+            $out['counts']['to_rate'] = ticketsystemTicket::countWhere( $unrated );
+        }
+        return array( 'result' => $out );
+    }
 }

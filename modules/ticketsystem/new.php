@@ -66,6 +66,12 @@ if ( $customer && class_exists( 'expKatalystCustomerService' ) )
     }
 }
 
+// (subscription)/<id>: "Get help with this service" preselects the site, when it is one of the account's own
+$wanted = isset( $Params['UserParameters']['subscription'] ) ? (int)$Params['UserParameters']['subscription'] : 0;
+foreach ( $sites as $s )
+    if ( $wanted > 0 && $s['id'] === $wanted )
+        $values['subscription_id'] = $wanted;
+
 if ( $http->hasPostVariable( 'TicketCreate' ) )
 {
     $values = array(

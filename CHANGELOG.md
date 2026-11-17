@@ -25,7 +25,11 @@ after updating: it adds the tables `ticketsystem_cc` and `ticketsystem_time` and
   now" instead of naming a virus; the ClamAV set-up is documented ([doc/attachments.md](doc/attachments.md)).
 - Updated: Mails of a post go to the ticket's CC addresses too; the log line counts them.
 - Updated: The history names merges, splits, followers, CC changes, time entries and tickets opened for a customer.
-
+- Added: The fetch function `customer_summary`: a customer's open tickets (those waiting on the customer first), the
+  resolved tickets still to rate and the counts, within the customer's read scope, for the support card of an account
+  home (doc/views.md).
+- Added: `ticketsystem/new/(subscription)/<id>` preselects the site a new ticket is about, when it is one of the
+  account's own ("Get help with this service").
 
 ## 1.1.0 (2026-11-17)
 
