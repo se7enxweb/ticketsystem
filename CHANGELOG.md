@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Added: Oracle and MongoDB. `ticketsystemSchema` defines the two tables once; the installer creates them there
+  with the kernel's schema handler (`sql/oracle/schema.sql` and `sql/mongodb/schema.json` are generated from it,
+  `bin/php/install.php --write-schema-files`). On MongoDB ticket numbers come from an atomic `$inc` on the counter;
+  on Oracle the column `number` is quoted (`settings/ezoracle.ini.append.php`, needs ezoracle with
+  `[QuotedIdentifierSettings] TypeColumnNames`).
+- Updated: The installer finds the existing tables in each database's own catalog.
+
 ## 1.0.0 (2026-11-16)
 
 The first release after 7x took over the extension from xrow GbR.

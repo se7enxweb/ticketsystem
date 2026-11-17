@@ -7,6 +7,8 @@
  *   php extension/ticketsystem/bin/php/install.php -s <admin siteaccess> --dry-run
  *   php extension/ticketsystem/bin/php/install.php -s <admin siteaccess> --customer-group="Members" \
  *       --front-siteaccess=<front> --admin-siteaccess=<admin>
+ *   php extension/ticketsystem/bin/php/install.php --write-schema-files
+ *       (re)writes sql/oracle/schema.sql and sql/mongodb/schema.json from ticketsystemSchema::definition()
  *
  * @copyright Copyright (C) 2026 7x. All rights reserved.
  * @license GNU General Public License v2.0 (or any later version)
@@ -19,8 +21,9 @@ $cli = eZCLI::instance();
 $script = eZScript::instance( array( 'description' => 'ticketsystem: install the tables, classes, groups and roles of the help desk',
                                      'use-session' => false, 'use-modules' => true, 'use-extensions' => true ) );
 $script->startup();
-$options = $script->getOptions( '[dry-run][customer-group:][staff-group:][front-siteaccess:][admin-siteaccess:][admin-user:][skip-roles]', '',
+$options = $script->getOptions( '[dry-run][write-schema-files][customer-group:][staff-group:][front-siteaccess:][admin-siteaccess:][admin-user:][skip-roles]', '',
     array( 'dry-run' => 'Report only, change nothing',
+           'write-schema-files' => 'Write sql/oracle/schema.sql and sql/mongodb/schema.json from the schema definition, nothing else',
            'customer-group' => 'User groups that get the role "Ticket Customer", comma separated (e.g. "Members")',
            'staff-group' => 'The support group (default "Technical Support Group")',
            'front-siteaccess' => 'The siteaccess customers and staff sign in to',
@@ -28,6 +31,28 @@ $options = $script->getOptions( '[dry-run][customer-group:][staff-group:][front-
            'admin-user' => 'Login of the user who owns what is created (default: admin)',
            'skip-roles' => 'Only tables and classes' ) );
 $script->initialize();
+
+if ( $options['write-schema-files'] )
+{
+    $ok = true;
+    foreach ( array( 'oracle' => 'schema.sql', 'mongodb' => 'schema.json' ) as $engine => $name )
+    {
+        $text = ticketsystemSchema::schemaFileText( $engine );
+        $file = __DIR__ . '/../../sql/' . $engine . '/' . $name;
+        if ( $text === null )
+        {
+            $cli->output( "FAIL  no schema handler for $engine (is the ezoracle extension there?)" );
+            $ok = false;
+            continue;
+        }
+        if ( !is_dir( dirname( $file ) ) )
+            mkdir( dirname( $file ), 0775, true );
+        $ok = file_put_contents( $file, $text ) !== false && $ok;
+        $cli->output( "DONE  sql/$engine/$name" );
+    }
+    $cli->output( $ok ? 'PASS' : 'FAIL' );
+    $script->shutdown( $ok ? 0 : 1 );
+}
 
 $login = $options['admin-user'] ? $options['admin-user'] : 'admin';
 $admin = eZUser::fetchByName( $login );

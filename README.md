@@ -29,7 +29,7 @@ PHP 8.0 to 8.5, and it was cleaned up, re-documented and extended.
 
 - Exponential 6.0.15 or later
 - PHP 8.0 to 8.5
-- MySQL/MariaDB, PostgreSQL or SQLite
+- MySQL/MariaDB, PostgreSQL, SQLite, Oracle (with the ezoracle extension) or MongoDB
 
 ## Installation
 

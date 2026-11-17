@@ -60,20 +60,37 @@ class ticketsystemInstaller
     public function tables()
     {
         $db = eZDB::instance();
-        $type = $db->databaseName();
-        // the tables that existed before this run (their indexes came with them); SQLite's relationList() lists
-        // only the kernel's ez* tables, so its catalog is read
-        $have = array();
-        if ( $type === 'sqlite' )
-            foreach ( (array)$db->arrayQuery( "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'ticketsystem%'" ) as $r )
-                $have[] = strtolower( $r['name'] );
-        else
-            $have = array_map( 'strtolower', (array)$db->relationList() );
-        $dir = $type === 'mysql' ? 'mysql' : ( $type === 'postgresql' ? 'postgresql' : ( $type === 'sqlite' ? 'sqlite' : '' ) );
-        $file = __DIR__ . '/../sql/' . $dir . '/schema.sql';
-        if ( $dir === '' || !is_file( $file ) )
+        $engine = ticketsystemSchema::engineOf( $db );
+        // the tables that existed before this run (their indexes came with them)
+        $have = ticketsystemSchema::existingTables( $db );
+        if ( $engine === 'oracle' || $engine === 'mongodb' )
         {
-            $this->fail( "no schema for the database type $type (create the tables of sql/mysql/schema.sql by hand)" );
+            // created by the kernel's schema handler from ticketsystemSchema::definition()
+            $missing = array();
+            foreach ( ticketsystemSchema::TABLES as $table )
+            {
+                if ( in_array( $table, $have, true ) )
+                    $this->line( "table $table exists" );
+                else
+                {
+                    $this->line( "create table $table", true );
+                    $missing[] = $table;
+                }
+            }
+            if ( $missing && !$this->dryRun )
+            {
+                foreach ( ticketsystemSchema::create( $missing, $db ) as $error )
+                    $this->fail( 'creating the tables: ' . $error );
+                $left = array_diff( $missing, ticketsystemSchema::existingTables( $db ) );
+                if ( $left && $this->ok )
+                    $this->fail( 'not created: ' . implode( ', ', $left ) );
+            }
+            return;
+        }
+        $file = __DIR__ . '/../sql/' . $engine . '/schema.sql';
+        if ( $engine === '' || !is_file( $file ) )
+        {
+            $this->fail( 'no schema for the database type ' . $db->databaseName() . ' (create the tables of sql/mysql/schema.sql by hand)' );
             return;
         }
         foreach ( preg_split( '/;\s*\n/', (string)file_get_contents( $file ) ) as $stmt )

@@ -44,6 +44,8 @@ class ticketsystemNumber
     public static function next( $prefix, $year )
     {
         $db = eZDB::instance();
+        if ( strpos( strtolower( (string)$db->databaseName() ), 'mongo' ) === 0 )
+            return self::nextOnMongo( $db, self::cleanPrefix( $prefix ), (int)$year );
         $p = $db->escapeString( self::cleanPrefix( $prefix ) );
         $y = (int)$year;
         $lock = $db->databaseName() === 'sqlite' ? '' : ' FOR UPDATE';
@@ -59,6 +61,41 @@ class ticketsystemNumber
         $next = (int)$rows[0]['last_value'] + 1;
         $db->query( "UPDATE ticketsystem_counter SET last_value=$next WHERE prefix='$p' AND year=$y" );
         return $next;
+    }
+
+    /**
+     * next() on MongoDB, which has no row lock (the driver drops FOR UPDATE): the counter document of $prefix and
+     * $year is created once (from its highest ticket, as on the other databases) and then raised by an atomic $inc,
+     * so two tickets opened at the same time never get the same number. The unique PRIMARY index (prefix, year) lets
+     * only one of two first tickets create the document; the other one then raises it.
+     *
+     * @param expMongoDB $db
+     * @param string $prefix a cleanPrefix()
+     * @param int $year
+     * @return int
+     */
+    protected static function nextOnMongo( $db, $prefix, $year )
+    {
+        $collection = $db->getClient()->selectCollection( $db->DB, 'ticketsystem_counter' );
+        $filter = array( 'prefix' => (string)$prefix, 'year' => (int)$year );
+        if ( $collection->findOne( $filter ) === null )
+        {
+            $max = $db->arrayQuery( "SELECT MAX(seq) AS m FROM ticketsystem_ticket WHERE prefix='" . $db->escapeString( $prefix ) . "' AND year=" . (int)$year );
+            $start = $max && isset( $max[0]['m'] ) ? (int)$max[0]['m'] : 0;
+            try
+            {
+                $collection->updateOne( $filter, array( '$setOnInsert' => $filter + array( 'last_value' => $start ) ), array( 'upsert' => true ) );
+            }
+            catch ( Exception $e )
+            {
+                // another process created it first (duplicate key on the PRIMARY index): its value is used
+            }
+        }
+        $result = $collection->findOneAndUpdate( $filter, array( '$inc' => array( 'last_value' => 1 ) ),
+                                                 array( 'returnDocument' => \MongoDB\Operation\FindOneAndUpdate::RETURN_DOCUMENT_AFTER ) );
+        if ( !isset( $result['last_value'] ) )
+            throw new RuntimeException( "ticketsystem: the counter $prefix/$year could not be raised" );
+        return (int)$result['last_value'];
     }
 
     /**

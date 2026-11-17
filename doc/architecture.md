@@ -30,6 +30,8 @@ so the administration shows it too.
 
 `ticketsystem_counter` keeps the last value per prefix and year. A new ticket takes the next value under a row lock
 (`SELECT ... FOR UPDATE`; SQLite locks the database for the transaction), so numbers are gapless and never shared.
+MongoDB has no row lock: there the counter document is raised by an atomic `$inc` (`findOneAndUpdate`), created once
+from the highest ticket of its prefix and year; its unique index (prefix, year) lets only one first ticket create it.
 The format is `[NumberSettings] Format` with `%prefix`, `%year` and `%seq` (zero-padded to `Digits`).
 
 ## Classes of the extension

@@ -1,0 +1,79 @@
+{
+    "database": "ticketsystem",
+    "comment": "ticketsystem (the help desk) on MongoDB: the collections and indexes the kernel's MongoDB schema handler (expMongoSchema) creates from ticketsystemSchema::definition(); bin/php/install.php does it in a running installation. A single-key PRIMARY index makes the driver fill ticketsystem_ticket.id; ticket numbers are taken with an atomic $inc on ticketsystem_counter.",
+    "collections": [
+        {
+            "name": "ticketsystem_ticket",
+            "indexes": [
+                {
+                    "keys": {
+                        "id": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "number": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_ticket_number",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "contentobject_id": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_ticket_object",
+                        "unique": true
+                    }
+                },
+                {
+                    "keys": {
+                        "account_key": 1,
+                        "status": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_ticket_account"
+                    }
+                },
+                {
+                    "keys": {
+                        "opener_id": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_ticket_opener"
+                    }
+                },
+                {
+                    "keys": {
+                        "status": 1,
+                        "modified": 1
+                    },
+                    "options": {
+                        "name": "ticketsystem_ticket_status"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "ticketsystem_counter",
+            "indexes": [
+                {
+                    "keys": {
+                        "prefix": 1,
+                        "year": 1
+                    },
+                    "options": {
+                        "name": "PRIMARY",
+                        "unique": true
+                    }
+                }
+            ]
+        }
+    ]
+}

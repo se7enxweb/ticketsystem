@@ -15,7 +15,12 @@
        --customer-group="Members" --front-siteaccess=<front> --admin-siteaccess=<admin>
    ```
    It creates what is missing, and only that:
-   - the tables `ticketsystem_ticket` and `ticketsystem_counter` (`sql/mysql`, `sql/postgresql`, `sql/sqlite`);
+   - the tables `ticketsystem_ticket` and `ticketsystem_counter` (`sql/mysql`, `sql/postgresql`, `sql/sqlite`;
+     on Oracle and MongoDB the kernel's schema handler creates them from `ticketsystemSchema::definition()`,
+     `sql/oracle/schema.sql` and `sql/mongodb/schema.json` show the result for creating them by hand and are
+     rewritten with `bin/php/install.php --write-schema-files`). On Oracle the column `number` is a reserved
+     word: it is created as `"NUMBER"`, and `settings/ezoracle.ini.append.php` makes the driver quote it in every
+     query (ezoracle with `[QuotedIdentifierSettings] TypeColumnNames`);
    - the class group "Help desk" with the classes `ticketsystem`, `ticket`, `ticket_comment` and
      `ticket_attachment`; existing classes from ticketsystem 1.x are kept and get the attributes they lack
      (`ticket_number`, `subscription`);
