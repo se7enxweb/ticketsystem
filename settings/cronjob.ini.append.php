@@ -10,4 +10,10 @@ Scripts[]
 Scripts[]=ticketsystem_autoclose.php
 Scripts[]=ticketsystem_sla.php
 
+# php runcronjobs.php ticketsystem_mailin: reply by e-mail from the IMAP/POP3 mailbox of ticketsystem.ini
+# [MailInSettings] (every minute or two; nothing happens until it is enabled there)
+[CronjobPart-ticketsystem_mailin]
+Scripts[]
+Scripts[]=ticketsystem_mailin.php
+
 */ ?>

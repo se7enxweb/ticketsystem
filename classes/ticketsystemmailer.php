@@ -224,7 +224,7 @@ class ticketsystemMailer
                 continue;
             }
             $seen[$address] = true;
-            $reference = $r['user_id'] > 0 && $this->mailInEnabled() ? ticketsystemReplyToken::reference( $base['number'], (int)$r['user_id'], $this->secret() ) : '';
+            $reference = $r['user_id'] > 0 && $this->mailInEnabled() && $this->secret() !== '' ? ticketsystemReplyToken::reference( $base['number'], (int)$r['user_id'], $this->secret() ) : '';
             $rate = '';
             if ( $posterIsStaff && $r['user_id'] > 0 && (int)$r['user_id'] !== (int)$posterId && $set->isDone( $t->attribute( 'status' ) )
                  && $this->settings->enabled( 'CSATSettings', 'Enabled' ) && $this->settings->enabled( 'CSATSettings', 'AskInMail' )
@@ -232,9 +232,12 @@ class ticketsystemMailer
                 $rate = $base['url'] . '#ts-rate';
             $c = self::content( $base + array( 'own_copy' => (int)$r['user_id'] === (int)$posterId, 'reference' => $reference, 'rate_url' => $rate ) );
             $html = $this->html( $c );
+            // reply by e-mail (doc/mail-in.md): the reader's mail carries the signed reference in its Message-ID too, which
+            // every mail program names in In-Reply-To when the reader answers
+            $id = $reference !== '' ? ticketsystemReplyToken::messageId( $base['number'], (int)$post->attribute( 'id' ), (int)$r['user_id'], $this->secret(), $host ) : $messageId;
             if ( $this->captured( $address ) )
             {
-                $this->capture( $address, $c, $html, $messageId, $root, $reference !== '' ? ticketsystemReplyToken::replyAddress( $this->settings->value( 'MailInSettings', 'ReplyAddress', '' ), $base['number'], (int)$r['user_id'], $this->secret() ) : '' );
+                $this->capture( $address, $c, $html, $id, $root, $reference !== '' ? ticketsystemReplyToken::replyAddress( $this->settings->value( 'MailInSettings', 'ReplyAddress', '' ), $base['number'], (int)$r['user_id'], $this->secret() ) : '' );
                 $result['captured']++;
                 continue;
             }
@@ -247,7 +250,7 @@ class ticketsystemMailer
             if ( $reply !== '' )
                 $mail->setReplyTo( $reply );
             $mail->setSubject( $c['subject'] );
-            $mail->setMessageID( $messageId );
+            $mail->setMessageID( $id );
             if ( !$isOpening )
             {
                 $mail->setReferences( $root );
@@ -329,15 +332,24 @@ class ticketsystemMailer
         return $this->settings->enabled( 'MailInSettings', 'Enabled', 'disabled' );
     }
 
-    /** The secret of the signed ticket references: [MailInSettings] TokenSecret, else one derived from the installation. */
+    /** @var string|null */
+    protected $secret = null;
+
+    /**
+     * The secret of the signed ticket references: [MailInSettings] TokenSecret, else a random one kept in the database
+     * (ticketsystemReplyToken::secret()), the same in the web server and the mail-in process.
+     */
     public function secret()
     {
-        $s = trim( (string)$this->settings->value( 'MailInSettings', 'TokenSecret', '' ) );
-        if ( $s !== '' )
-            return $s;
-        $ini = eZINI::instance();
-        return hash( 'sha256', 'ticketsystem|' . $ini->variable( 'DatabaseSettings', 'Database' ) . '|' . $ini->variable( 'DatabaseSettings', 'Password' )
-                               . '|' . eZSys::rootDir() );
+        if ( $this->secret === null )
+            $this->secret = ticketsystemReplyToken::secret( $this->settings );
+        return $this->secret;
+    }
+
+    /** Captures a plain text mail (the mail-in notice) like a post's mail. */
+    public function captureText( $address, $subject, $text )
+    {
+        $this->capture( $address, array( 'subject' => $subject, 'text' => $text ), '', '<ticketsystem.notice.' . bin2hex( random_bytes( 6 ) ) . '@ticketsystem.invalid>', '' );
     }
 
     /** Whether a user belongs to the ticket's customer side (the opener or a user of its account), not support staff. */

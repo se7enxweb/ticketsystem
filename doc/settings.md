@@ -62,3 +62,13 @@ All in `settings/ticketsystem.ini`, each with a comment there. Override them in
 | | ListLimit | 25 | tickets per page |
 | | SearchLimit | 50 | search results per page |
 | | MaxNoteLength | 20000 | characters of an internal note ([notes.md](notes.md)) |
+| MailInSettings | Enabled | disabled | reply by e-mail ([mail-in.md](mail-in.md)) |
+| | ReplyAddress, TokenSecret | empty | the reference in the Reply-To address (`support+%token@...`); the signatures' secret (empty: kept in the database) |
+| | RequireToken, OpenNewTickets | disabled | only signed references; new tickets by mail |
+| | RefusedAction, QuarantineDirectory, NoticeToSender | quarantine, var/ticketsystem/mailin-quarantine, enabled | refused mail |
+| | HoldDirectory, MaxMessageSize, IgnoreSenders[] | var/ticketsystem/mailin-files, 30 | files held when attachments are off; MB; senders never taken |
+| | Protocol, Host, Port, Encryption, VerifyPeer, User, Password, Folder, TicketMailOnly, DoneFolder | imap, empty, 0, ssl, enabled, ... | the mailbox of the cronjob part `ticketsystem_mailin` |
+| ImportSettings | Enabled | disabled | the menu entry of the import ([import-whmcs.md](import-whmcs.md)) |
+| | ExportFile | var/ticketsystem/whmcs-tickets.json | the WHMCS export the staff page reads |
+| | ClientResolver, StaffUserID | katalyst, 0 | WHMCS client id to user; the user of staff posts (0 = 14) |
+| | StaffUserMap[], StatusMap[], DepartmentMap[] | none | WHMCS admin id to user; WHMCS status to status (default Closed); department id to category |

@@ -71,6 +71,17 @@ $ViewList['rate'] = array(
     'script' => 'rate.php',
     'default_navigation_part' => 'ezmynavigationpart',
     'params' => array( 'Token', 'Score' ) );
+// staff (manage): the WHMCS import (doc/import-whmcs.md) and the reply-by-e-mail log (doc/mail-in.md)
+$ViewList['import'] = array(
+    'script' => 'import.php',
+    'functions' => array( 'manage' ),
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
+    'params' => array() );
+$ViewList['mailin'] = array(
+    'script' => 'mailin.php',
+    'functions' => array( 'manage' ),
+    'default_navigation_part' => 'ezticketsystemnavigationpart',
+    'params' => array() );
 // the original list of ticketsystem 1.x (the folder [TicketSettings] TicketNodeID)
 $ViewList['tickets'] = array(
     'script' => 'tickets.php',

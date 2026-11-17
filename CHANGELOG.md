@@ -4,6 +4,21 @@
 
 Work in progress for 1.1 (on main, not released).
 
+- Added: Reply by e-mail (doc/mail-in.md), finished: every ticket mail carries the signed reference of the ticket
+  and its reader in its Message-ID too, so a plain reply finds its ticket without a "+" address; the number in the
+  subject is enough when the sender may reply and passed SPF/DKIM/DMARC (`RequireToken=disabled`, the new default);
+  refused mail is quarantined or bounced (pipe, exit 77) and a known sender gets a notice, an unknown one never gets
+  mail; files go through the attachment storage and its checks. The cronjob part `ticketsystem_mailin` and
+  `mailin.php --poll` fetch an IMAP or POP3 mailbox (plain PHP; with IMAP only ticket mail, so a shared support
+  mailbox keeps everything else unread). The staff page `ticketsystem/mailin` shows the latest results.
+  `OpenNewTickets` is off by default. The signatures' secret is a random one kept in the database unless
+  `TokenSecret` is set.
+- Added: The WHMCS import, finished (doc/import-whmcs.md): `import_whmcs.php` is a dry run unless `--execute`; the
+  staff page `ticketsystem/import` shows the export, a dry run and the totals, takes an upload and runs the import;
+  staff replies as `StaffUserMap[<WHMCS admin id>]` or the import user; status by `StatusMap` (default Closed),
+  category by `DepartmentMap` or the department's name; the opening post names the WHMCS ticket; a later run adds
+  new replies only. The export carries the WHMCS admin id instead of names and counts files; `--counts` (or
+  `TS_COUNTS=1`) exports counts only.
 - Fixed: The TicketSystem pages of the administration draw on the admin4 model: names in tables are cells (a row
   header is upper case and unbroken, so subjects ran out of the card), every fact is a "Label: value" pair, and the
   list's path names its list ("TicketSystem > Needs a staff reply").

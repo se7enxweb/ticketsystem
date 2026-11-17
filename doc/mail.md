@@ -9,7 +9,10 @@ Every post is mailed: the opening post and every reply, staff's and the customer
   HTML part in the kernel's mail layout (`design:mail/layout.tpl`), both with the **full post**, the ticket's number,
   subject, status, category and priority, and a link to the ticket. The poster's copy says it is their own message.
 - **Subject**: `[7X-2026-00042] <subject>`, replies `Re: [7X-2026-00042] <subject>`.
-- **Threading**: `Message-ID` per post, `References` and `In-Reply-To` to the ticket, `X-Ticket-Number`.
+- **Threading**: `Message-ID` per post (per post and reader with reply by e-mail on: it carries the signed reference
+  of the ticket and the reader), `References` and `In-Reply-To` to the ticket, `X-Ticket-Number`.
+- **Replies by e-mail**: see [mail-in.md](mail-in.md). With `[MailInSettings] Enabled` the text starts with
+  "## Reply above this line ##" and `ReplyAddress` puts the reference in the `Reply-To` address too.
 - **Sender**: `[MailSettings] Sender` (else site.ini `EmailSender`, then `AdminEmail`), `SenderName`, `ReplyTo`.
 - **Links**: `[MailSettings] SiteURL` (else site.ini `SiteURL`).
 

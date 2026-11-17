@@ -5,6 +5,8 @@
 | `ticketsystem/list` | `read` | The tickets the user may read, newest activity first. View parameters: `(status)/open` (default: not resolved or closed), `(status)/done`, `(status)/all`; `(offset)/<n>`. Filters are view parameters, never GET parameters. |
 | `ticketsystem/new` | `create` | The form of a new ticket: subject, category, priority, the site it is about (Katalyst), the message. |
 | `ticketsystem/view/<number>` | `read` | One ticket with every post, oldest first, the reply form, the details and the status actions. A ticket the user may not read answers **404**, like a number that does not exist. `ticketsystem/view/<index id>` redirects to the number. |
+| `ticketsystem/import` | `manage` | The WHMCS import ([import-whmcs.md](import-whmcs.md)): the export's counts, a dry run, what was imported; upload an export (`TicketImportUpload`, file `ImportFile`) and run the import (`TicketImportRun`). Counts only. |
+| `ticketsystem/mailin` | `manage` | Reply by e-mail ([mail-in.md](mail-in.md)): the settings in use and the latest inbound mails (time, result, ticket). |
 | `ticketsystem/tickets` | `use` | The original list of ticketsystem 1.x (the folder `[TicketSettings] TicketNodeID`); without that folder it redirects to `ticketsystem/list`. |
 
 ## Forms

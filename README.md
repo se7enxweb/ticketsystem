@@ -27,6 +27,11 @@ PHP 8.0 to 8.5, and it was cleaned up, re-documented and extended.
   an export.
 - **Attachments** (1.1): files of tickets, replies and notes, checked (size, type, content, an optional virus
   scanner), stored outside the public storage, served only to readers of the ticket.
+- **Reply by e-mail** (1.1): an answer to a ticket mail becomes a post on its ticket; every mail carries a signed
+  reference of its ticket and reader, the sender is checked, quoted text is cut. From an IMAP/POP3 mailbox or a mail
+  server pipe ([doc/mail-in.md](doc/mail-in.md)).
+- **WHMCS import** (1.1): past WHMCS tickets become help desk tickets of their customers (by WHMCS client id), as
+  history, silently and only once; a dry run by default ([doc/import-whmcs.md](doc/import-whmcs.md)).
 - **Every database of the kernel** (1.1): MySQL/MariaDB, PostgreSQL, SQLite, Oracle and MongoDB, from one schema
   definition; the installer also upgrades the tables of an older release.
 - **Mobile-first views**, light and dark, with no inline CSS; inside the Katalyst customer console they use its
@@ -69,6 +74,8 @@ Then activate the extension and run the installer; see [doc/install.md](doc/inst
 | Policies, roles and sharing | [doc/permissions.md](doc/permissions.md) |
 | Status sets | [doc/statuses.md](doc/statuses.md) |
 | Mail | [doc/mail.md](doc/mail.md) |
+| Reply by e-mail | [doc/mail-in.md](doc/mail-in.md) |
+| Importing WHMCS tickets | [doc/import-whmcs.md](doc/import-whmcs.md) |
 | Design and the Katalyst console | [doc/design.md](doc/design.md) |
 | Every setting | [doc/settings.md](doc/settings.md) |
 | Assignment, priority and queue | [doc/assignment.md](doc/assignment.md) |

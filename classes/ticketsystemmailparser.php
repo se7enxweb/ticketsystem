@@ -6,7 +6,7 @@
  */
 
 /**
- * A small MIME parser for inbound mail (reply by e-mail, doc/mail.md): headers (unfolded, RFC 2047 decoded), the
+ * A small MIME parser for inbound mail (reply by e-mail, doc/mail-in.md): headers (unfolded, RFC 2047 decoded), the
  * sender's address, the plain text of the message (text/plain preferred, else HTML turned into text), and the
  * attached files. Pure: no database, no extension of PHP beyond iconv/mbstring.
  */
