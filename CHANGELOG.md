@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (unreleased)
+## 1.0.0 (2026-11-16)
 
 The first release after 7x took over the extension from xrow GbR.
 
@@ -25,3 +25,5 @@ The first release after 7x took over the extension from xrow GbR.
   "state" or "assigned" before), and their templates live in override/templates as the kernel expects.
 - Updated: The original templates use classes instead of inline styles.
 - Removed: The setting `AvailableOperations=content_publish` of workflow.ini, which replaced the kernel's list.
+- Updated: The help desk views check their policy themselves and send a visitor who is not signed in to the sign-in
+  page and back (they are in the PolicyOmitList).
