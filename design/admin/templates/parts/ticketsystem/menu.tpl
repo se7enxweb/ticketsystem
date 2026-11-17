@@ -39,7 +39,8 @@
     <li><a href={'ticketsystem/sla'|ezurl}>{'SLA and escalation'|i18n( $tsI )}</a></li>
     <li><a href={'ticketsystem/settings/queues'|ezurl}>{'Queues and categories'|i18n( $tsI )}</a></li>
     <li><a href={'ticketsystem/settings/mail'|ezurl}>{'Mail, files and ratings'|i18n( $tsI )}</a></li>
-    {if $tsImport}<li><a href={'ticketsystem/settings/import'|ezurl}>{'Import (WHMCS)'|i18n( $tsI )}</a></li>{/if}
+    <li><a href={'ticketsystem/mailin'|ezurl}>{'Mail-in'|i18n( $tsI )}</a></li>
+    {if $tsImport}<li><a href={'ticketsystem/import'|ezurl}>{'Import'|i18n( $tsI )}</a></li>{/if}
     {/if}
 </ul>
 </div>

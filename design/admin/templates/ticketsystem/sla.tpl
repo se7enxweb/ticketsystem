@@ -49,7 +49,7 @@
 
 <section class="a4-card" aria-labelledby="ts-sla-log-h" id="ts-sla-log-card">
     <div class="a4-card-head"><h2 class="a4-card-title a4-h3" id="ts-sla-log-h">{'Latest escalation steps'|i18n( $tsI )}</h2>
-        <p class="a4-meta">{'Steps:'|i18n( $tsI )} {foreach $steps as $tsS sequence array( '', ', ' ) as $tsSep}{$tsSep}{$tsS.percent} % {$tsS.action|i18n( $tsI )|wash}{/foreach}</p></div>
+        <p class="a4-meta">{'Steps:'|i18n( $tsI )} {foreach $steps as $tsS}{delimiter}, {/delimiter}{$tsS.percent} % {$tsS.action|i18n( $tsI )|wash}{/foreach}</p></div>
     <div class="a4-card-body">
     {if $log|count}
     <ol class="a4-timeline" id="ts-sla-log">

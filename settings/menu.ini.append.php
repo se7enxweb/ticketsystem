@@ -58,6 +58,7 @@ GroupLinks_manage[]=sla
 GroupLinks_manage[]=satisfaction
 GroupLinks_manage[]=queues
 GroupLinks_manage[]=mail
+GroupLinks_manage[]=mailin
 GroupLinks_manage[]=import
 Links[]
 LinkNames[]
@@ -93,7 +94,9 @@ Links[queues]=ticketsystem/settings/queues
 PolicyList_queues[]=ticketsystem/manage
 Links[mail]=ticketsystem/settings/mail
 PolicyList_mail[]=ticketsystem/manage
-Links[import]=ticketsystem/settings/import
+Links[mailin]=ticketsystem/mailin
+PolicyList_mailin[]=ticketsystem/manage
+Links[import]=ticketsystem/import
 PolicyList_import[]=ticketsystem/manage
 
 */ ?>
