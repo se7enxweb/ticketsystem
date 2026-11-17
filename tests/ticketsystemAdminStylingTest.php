@@ -76,6 +76,7 @@ class ticketsystemAdminStylingTest extends TestCase
     public function testListNamesFollowTheLeftMenu()
     {
         $this->assertSame( 'Not resolved', ticketsystemDesk::listName( array() ) );
+        $this->assertSame( 'Not resolved', ticketsystemDesk::listName( array( 'status' => 'active' ) ) );
         $this->assertSame( 'Needs a staff reply', ticketsystemDesk::listName( array( 'reply' => 'staff' ) ) );
         $this->assertSame( 'All tickets', ticketsystemDesk::listName( array( 'status' => 'all' ) ) );
         $this->assertSame( 'Tickets', ticketsystemDesk::listName( array( 'status' => 'all', 'q' => 'x' ) ) );

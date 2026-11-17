@@ -203,6 +203,9 @@ class ticketsystemDesk
             'Resolved or closed' => array( 'status' => 'done' ), 'All tickets' => array( 'status' => 'all' ),
         );
         $filter = array_map( 'strval', $filter );
+        // (status)/active is the default: the left menu's "Not resolved" names it, so it is marked there alone
+        if ( isset( $filter['status'] ) && $filter['status'] === self::STATUS_ACTIVE )
+            unset( $filter['status'] );
         ksort( $filter );
         foreach ( $lists as $name => $f )
         {
