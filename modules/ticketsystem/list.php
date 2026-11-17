@@ -85,6 +85,9 @@ if ( $access->isStaff() )
         'counts' => array( 'open' => $figures['active'], 'done' => $figures['done'], 'all' => $figures['all'] ),
         'may_create' => $access->may( 'create' ), 'is_staff' => true, 'scope' => $access->scope( 'read' ),
     ), ticketsystemView::path( ezpI18n::tr( 'extension/ticketsystem', ticketsystemDesk::listName( $p['filter'] ) ) ) );
+    // the left menu of admin4 marks the list shown: the address with the view parameters its links use (the kernel's
+    // uri_string leaves view parameters out; design/admin4/templates/parts/ticketsystem/menu.tpl reads it)
+    $Result['content_info']['persistent_variable']['ticketsystem_menu_uri'] = ticketsystemDesk::menuUri( $p['filter'] );
     return;
 }
 

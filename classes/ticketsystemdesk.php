@@ -191,8 +191,22 @@ class ticketsystemDesk
     }
 
     /**
-     * The name of a filter as the left menu of the tab TicketSystem names it (pure; the breadcrumb "TicketSystem >
-     * <name>"): exactly one of the menu's lists, else "Tickets".
+     * The address of a filter as the left menu of the tab TicketSystem writes its links (pure): (status) first, then the
+     * other filters of the menu, so the admin4 menu can mark the list shown. Filters the menu has no link for are left out.
+     */
+    public static function menuUri( array $filter )
+    {
+        // the order and the keys of the left menu's links (menu.ini [Leftmenu_ticketsystem]); no status is "active"
+        $uri = 'ticketsystem/list/(status)/' . rawurlencode( isset( $filter['status'] ) ? (string)$filter['status'] : self::STATUS_ACTIVE );
+        foreach ( array( 'reply', 'assignee', 'priority', 'sla' ) as $k )
+            if ( isset( $filter[$k] ) && (string)$filter[$k] !== '' )
+                $uri = ( $uri === 'ticketsystem/list/(status)/active' ? 'ticketsystem/list' : $uri ) . '/(' . $k . ')/' . rawurlencode( (string)$filter[$k] );
+        return $uri;
+    }
+
+    /**
+     * The name of a filter as the left menu names it (pure; the breadcrumb "TicketSystem > <name>"): exactly one of
+     * the menu's lists, else "Tickets".
      */
     public static function listName( array $filter )
     {

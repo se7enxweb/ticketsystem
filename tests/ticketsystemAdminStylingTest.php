@@ -80,6 +80,9 @@ class ticketsystemAdminStylingTest extends TestCase
         $this->assertSame( 'Needs a staff reply', ticketsystemDesk::listName( array( 'reply' => 'staff' ) ) );
         $this->assertSame( 'All tickets', ticketsystemDesk::listName( array( 'status' => 'all' ) ) );
         $this->assertSame( 'Tickets', ticketsystemDesk::listName( array( 'status' => 'all', 'q' => 'x' ) ) );
+        $this->assertSame( 'ticketsystem/list/(status)/active', ticketsystemDesk::menuUri( array() ) );
+        $this->assertSame( 'ticketsystem/list/(reply)/staff', ticketsystemDesk::menuUri( array( 'reply' => 'staff', 'q' => 'x' ) ) );
+        $this->assertSame( 'ticketsystem/list/(status)/done/(priority)/urgent', ticketsystemDesk::menuUri( array( 'priority' => 'urgent', 'status' => 'done' ) ) );
     }
 
     public function testAdminStylesheetsUseTokensOnly()
