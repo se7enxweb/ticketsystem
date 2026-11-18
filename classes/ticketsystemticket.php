@@ -149,7 +149,9 @@ class ticketsystemTicket extends eZPersistentObject
     /** @return eZContentObject|null */
     public function contentObject()
     {
-        $o = eZContentObject::fetch( (int)$this->attribute( 'contentobject_id' ) );
+        // a ticket without its object (0: an imported or a mail ticket) has none to fetch; fetch( 0 ) logs an error
+        $id = (int)$this->attribute( 'contentobject_id' );
+        $o = $id > 0 ? eZContentObject::fetch( $id ) : null;
         return $o instanceof eZContentObject ? $o : null;
     }
 }
