@@ -417,9 +417,39 @@ class ticketsystemSchema
     /** Whether a column exists (always on MongoDB: a document gets its fields when it is written). */
     public static function hasColumn( $db, $table, $column )
     {
-        if ( self::engineOf( $db ) === 'mongodb' )
+        $engine = self::engineOf( $db );
+        if ( $engine === 'mongodb' )
             return true;
-        if ( self::engineOf( $db ) === 'oracle' && $column === 'number' )
+        // From the engine's catalog: probing with a SELECT of the column made the driver log a failed query (an
+        // error in error.log) for every column an older installation lacks, on every run of the installer
+        $t = $db->escapeString( strtolower( (string)$table ) );
+        $c = $db->escapeString( strtolower( (string)$column ) );
+        $sql = null;
+        if ( $engine === 'postgresql' )
+            $sql = "SELECT 1 AS found FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '$t' AND column_name = '$c'";
+        else if ( $engine === 'mysql' )
+            $sql = "SELECT 1 AS found FROM information_schema.columns WHERE table_schema = DATABASE() AND LOWER( table_name ) = '$t' AND LOWER( column_name ) = '$c'";
+        else if ( $engine === 'oracle' )
+            $sql = "SELECT 1 AS found FROM user_tab_columns WHERE table_name = UPPER( '$t' ) AND column_name = UPPER( '$c' )";
+        else if ( $engine === 'sqlite' )
+        {
+            $rows = self::tryArrayQuery( $db, "PRAGMA table_info( $table )" );
+            if ( $rows !== null )
+            {
+                foreach ( $rows as $row )
+                    if ( isset( $row['name'] ) && strtolower( (string)$row['name'] ) === $c )
+                        return true;
+                return false;
+            }
+        }
+        if ( $sql !== null )
+        {
+            $rows = self::tryArrayQuery( $db, $sql );
+            if ( $rows !== null )
+                return count( $rows ) > 0;
+        }
+        // another engine, or a catalog that cannot be read: the probe
+        if ( $engine === 'oracle' && $column === 'number' )
             $column = '"NUMBER"';
         return self::tryArrayQuery( $db, "SELECT $column FROM $table WHERE 1 = 0" ) !== null;
     }
