@@ -64,6 +64,10 @@ class ticketsystemMailIn
     public static function isAutomatic( array $mail )
     {
         $h = $mail['headers'];
+        // the rule every mailbox reader of the kernel shares (Exponential 6.0.15 and later): Auto-Submitted,
+        // Precedence and the X-Autoreply headers; this desk adds lists, its own mails and mail-system senders below
+        if ( class_exists( 'expMailReceive' ) && expMailReceive::isAutomaticHeaders( (array)$h ) )
+            return true;
         if ( isset( $h['auto-submitted'] ) && strtolower( trim( $h['auto-submitted'] ) ) !== 'no' )
             return true;
         if ( isset( $h['precedence'] ) && in_array( strtolower( trim( $h['precedence'] ) ), array( 'bulk', 'junk', 'list', 'auto_reply' ), true ) )
@@ -377,7 +381,18 @@ class ticketsystemMailIn
         {
             foreach ( $box->waiting( $limit, $this->ticketMailSearch() ) as $id )
             {
-                $r = $this->handle( $box->fetch( $id ) );
+                // one message that fails stops only itself: it stays unread (fetched with PEEK, not marked done)
+                // and is read again at the next run; the others are read now
+                try
+                {
+                    $r = $this->handle( $box->fetch( $id ) );
+                }
+                catch ( Throwable $e )
+                {
+                    eZDebug::writeError( 'Mail-in message ' . (int)$id . ': ' . $e->getMessage(), __METHOD__ );
+                    $out[] = $this->result( 'failed', substr( $e->getMessage(), 0, 300 ) );
+                    continue;
+                }
                 if ( $r['result'] !== 'disabled' )
                     $box->done( $id, $done );
                 $out[] = $r;

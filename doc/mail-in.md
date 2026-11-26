@@ -39,10 +39,14 @@ no backscatter.
   `[AttachmentSettings] Enabled=disabled` they are kept for staff in `HoldDirectory` (`<number>/<post id>/`, 0600).
 - Never twice: the `Message-ID` is kept in `ticketsystem_mailin`. Automatic mail (auto-replies, mailing lists,
   bounces, delivery reports, and the help desk's own ticket mails, which carry `X-Ticket-Number`) is ignored.
+  On Exponential 6.0.15 and later the kernel's shared rule for automatic mail (`expMailReceive`: `Auto-Submitted`,
+  `Precedence` and the `X-Autoreply` headers) applies first; the help desk's own additions follow.
 - **New tickets by mail** (`OpenNewTickets`, off by default): a mail that names no ticket opens a new ticket when its
   sender is a user who may open tickets.
 
-Results: `posted`, `opened`, `duplicate`, `ignored`, `quarantined`, `bounced`, `disabled`. The log
+Results: `posted`, `opened`, `duplicate`, `ignored`, `quarantined`, `bounced`, `disabled`, and `failed` (the mail could
+not be handled, e.g. the database was away: it stays unread on the server, or in the Maildir's `new/`, and is read
+again at the next run; the other mails of the run are handled). The log
 (`var/log/ticketsystem.log`) names the result, the reason and the ticket number, never an address or a text; the
 staff page `ticketsystem/mailin` shows the latest results.
 

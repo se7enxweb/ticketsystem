@@ -66,7 +66,16 @@ if ( $options['maildir'] )
     $n = 0;
     foreach ( array_slice( (array)glob( "$dir/new/*" ), 0, $limit ) as $file )
     {
-        $r = $in->handle( (string)file_get_contents( $file ) );
+        // one mail that fails stops only itself: it stays in new/ and is read again
+        try
+        {
+            $r = $in->handle( (string)file_get_contents( $file ) );
+        }
+        catch ( Throwable $e )
+        {
+            $say( array( 'result' => 'failed', 'reason' => substr( $e->getMessage(), 0, 300 ), 'ticket' => '' ), basename( $file ) );
+            continue;
+        }
         $say( $r, basename( $file ) );
         if ( $r['result'] !== 'disabled' )
             rename( $file, "$dir/cur/" . basename( $file ) . ':2,S' );
