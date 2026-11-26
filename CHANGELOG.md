@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.1 (2026-11-25)
 
 Merge and split, followers and CC, time tracking, tickets for customers, automatic tickets. Run `bin/php/install.php`
 after updating: it adds the tables `ticketsystem_cc` and `ticketsystem_time` and the ticket columns `merged_into`,
@@ -33,6 +33,11 @@ after updating: it adds the tables `ticketsystem_cc` and `ticketsystem_time` and
   keeps one (doc/permissions.md).
 - Added: `ticketsystem/new/(subscription)/<id>` preselects the site a new ticket is about, when it is one of the
   account's own ("Get help with this service").
+- Fixed: One mail of the mail-in poll that fails (an exception while it is handled) no longer stops the others: it
+  stays unread on the server (or in the Maildir's `new/`) with the result `failed`, and is read again at the next run.
+- Updated: Automatic mail is recognised with the kernel's shared rule (`expMailReceive`, Exponential 6.0.15) where
+  the kernel has it; the help desk's own additions stay. A test runs the poll against the kernel's fake IMAP and POP3
+  servers.
 
 ## 1.1.0 (2026-11-17)
 
