@@ -3,7 +3,7 @@
  * PHP 8.4 and later deprecate a typed parameter made nullable only by its default (array $x = null): the extension
  * writes ?array $x = null, which PHP 8.0 reads as well. A source scan, DB-less.
  *
- * @copyright Copyright (C) 1998 - 2026 Exponential Foundation and 7x. All rights reserved.
+ * @copyright Copyright (C) 1998 - 2026 Exponential Foundation and 7x; All rights reserved.
  * @license GNU General Public License v2.0 (or any later version)
  */
 
